@@ -1,7 +1,8 @@
 class Mapping(object):
 
-    def __init__(self, table=None):
+    def __init__(self, table=None, fields=[]):
         self.table = table if table else {}
+        self.fields = fields
 
     def map(self, tree, name):
         atname = 'map_' + name

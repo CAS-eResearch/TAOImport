@@ -45,6 +45,10 @@ class SED(Module):
         Required('descendant', 'merge_type', 'dt',
                  'sfr_disk', 'sfr_bulge',
                  'sfr_disk_z', 'sfr_bulge_z'),
+        TreeLocalIndex('descendant'),
+        Choice([0, 1, 2], 'merge_type'),
+        NonZero('dt'),
+        Positive('sfr_disk', 'sfr_bulge', 'sfr_disk_z', 'sfr_bulge_z', 'dt'),
     ]
 
     @classmethod

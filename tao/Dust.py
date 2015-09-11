@@ -18,6 +18,7 @@ class Dust(Module):
     }
     validators = [
         Required('cold_gas', 'metals_cold_gas', 'disk_scale_radius'),
+        Positive('cold_gas', 'metals_cold_gas', 'disk_scale_radius'),
     ]
 
     @classmethod

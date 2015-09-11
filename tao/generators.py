@@ -43,11 +43,11 @@ class TreeLocalIndices(Generator):
 class GlobalDescendants(Generator):
 
     def generate_fields(self, fields):
-        gdescs = self.get_field(fields, 'global_descendants', np.uint32)
-        descs = fields['descendants']
+        gdescs = self.get_field(fields, 'global_descendant', np.uint32)
+        descs = fields['descendant']
         gidxs = fields['global_index']
-        for ii in range(len(lidxs)):
+        for ii in range(len(gidxs)):
             if descs[ii] != -1:
-                gdescs[ii] = gids[descs[ii]]
+                gdescs[ii] = gidxs[descs[ii]]
             else:
                 gdescs[ii] = -1

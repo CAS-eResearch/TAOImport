@@ -1,4 +1,4 @@
-import h5py, logging
+import h5py, logging, numpy as np
 from LightCone import LightCone
 from Converter import Converter
 from datatype import datatype
@@ -10,15 +10,20 @@ class Exporter(object):
     def __init__(self, filename, modules, mapping=None, converter=None, arguments=None):
         self.arguments = arguments
         self.modules = modules
-        self.galaxy_type = datatype
-        self.chunk_size = 10000
-        self.open_file(filename + '.h5')
         self.mapping = mapping
+        self.chunk_size = 10000
+        self.set_datatype(datatype)
+        self.open_file(filename + '.h5')
         self.converter = converter if converter else self.default_converter()
 
     def default_converter(self):
         modules = [cls(self.mapping, self.arguments) for cls in self.modules]
-        return Converter(modules)
+        return Converter(modules, self.mapping, self.galaxy_type)
+
+    def set_datatype(self, dtype):
+        if self.mapping is not None:
+            dtype = np.dtype(dtype.descr + self.mapping.fields)
+        self.galaxy_type = dtype
 
     def open_file(self, filename):
         self.file = h5py.File(filename, 'w')

@@ -1,13 +1,14 @@
 import numpy as np
-from datatype import datatype
 
 class Converter(object):
 
-    def __init__(self, modules):
+    def __init__(self, modules, mapping, galaxy_type):
         self.modules = modules
+        self.mapping = mapping
+        self.galaxy_type = galaxy_type
 
     def convert_tree(self, src_tree):
-        dst_tree = np.empty(len(src_tree), datatype)
+        dst_tree = np.empty(len(src_tree), self.galaxy_type)
 
         # Do conversion first.
         fields = {}
@@ -26,5 +27,10 @@ class Converter(object):
         for name, values in fields.iteritems():
             x = dst_tree[name]
             x[:] = values
+
+        # Perform a direct transfer of fields from within the
+        # mapping that are flagged.
+        for field, dtype in self.mapping.fields:
+            dst_tree[field] = src_tree[field]
 
         return dst_tree

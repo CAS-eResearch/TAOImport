@@ -32,27 +32,32 @@ if __name__ == '__main__':
     globals_dict = {'np': np, 'tao': tao}
     execfile(script, globals_dict, locals_dict)
 
-    cosmo = locals_dict.get('cosmology', None)
-    if cosmo is None:
+    sim = locals_dict.get('simulation', None)
+    if sim is None:
         print '\n'.join([
-            'No cosmology information has been specified in your conversion script. ',
-            'Please add a dictionary cosmology information composed of the Hubble ',
-            'constant, OmegaM and OmegaL.'
+            'No simulation information has been specified in your conversion script. ',
+            'Please add a dictionary of simulation information composed of the Hubble ',
+            'constant, OmegaM, OmegaL, and the box size.'
         ])
         sys.exit(1)
-    if 'hubble' not in cosmo:
+    if 'hubble' not in sim:
         print '\n'.join([
-            'No Hubble value found in cosmology data.'
+            'No Hubble value found in simulation data.'
         ])
         sys.exit(1)
-    if 'omega_m' not in cosmo:
+    if 'omega_m' not in sim:
         print '\n'.join([
-            'No OmegaM value found in cosmology data.'
+            'No OmegaM value found in simulation data.'
         ])
         sys.exit(1)
-    if 'omega_l' not in cosmo:
+    if 'omega_l' not in sim:
         print '\n'.join([
-            'No OmegaL value found in cosmology data.'
+            'No OmegaL value found in simulation data.'
+        ])
+        sys.exit(1)
+    if 'box_size' not in sim:
+        print '\n'.join([
+            'No box size value found in simulation data.'
         ])
         sys.exit(1)
 
@@ -63,9 +68,10 @@ if __name__ == '__main__':
         ])
         sys.exit(1)
 
+    tao.library['box_size'] = sim['box_size']
+
     with tao.Exporter(args.output, modules, locals_dict.get('mapping', None), arguments=args) as exp:
-        sim = locals_dict['simulation']
-        exp.set_cosmology(cosmo['hubble'], cosmo['omega_m'], cosmo['omega_l'])
+        exp.set_cosmology(sim['hubble'], sim['omega_m'], sim['omega_l'])
         exp.set_box_size(sim['box_size'])
         exp.set_redshifts(redshifts)
         for tree in locals_dict['iterate_trees']():
