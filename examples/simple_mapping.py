@@ -37,7 +37,7 @@ mapping = tao.Mapping({
 
 # A generator function which should yield each tree in the
 # source dataset represented as a compound NumPy array.
-def iterate_trees():
+def iterate_trees(args):
 
     # You'll probably want to define the datatype of the source
     # trees somewhere here.

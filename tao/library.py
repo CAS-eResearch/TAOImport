@@ -28,6 +28,9 @@ class LazyReference(object):
     def __str__(self):
         return str(self.get())
 
+    def __sub__(self, other):
+        return self.get() - other
+
 class Library(object):
 
     def __init__(self):

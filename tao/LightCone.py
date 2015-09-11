@@ -35,6 +35,7 @@ class LightCone(Module):
     }
     generators = [
         GlobalIndices(),
+        WithinCRange(0, library['n_snapshots'], 'snapshot')
     ]
     validators = [
         Required('position_x', 'position_y', 'position_z',

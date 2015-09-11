@@ -84,6 +84,24 @@ class WithinRange(FieldValidator):
                     msg += ' Should be within range [%s, %s], but found value of %s.'%(self.lower, self.upper, val)
                     raise ValidationError(msg)
 
+class WithinCRange(FieldValidator):
+
+    def __init__(self, lower, upper, *fields):
+        super(WithinCRange, self).__init__(*fields)
+        self.lower = lower
+        self.upper = upper
+
+    def validate_fields(self, fields):
+        for fld in self.fields:
+            if fld not in fields:
+                continue
+            data = fields[fld]
+            for val in data:
+                if val < self.lower or val > (self.upper - 1):
+                    msg = 'Invalid value in "%s".'%fld
+                    msg += ' Should be within range [%s, %s], but found value of %s.'%(self.lower, self.upper, val)
+                    raise ValidationError(msg)
+
 class Choice(FieldValidator):
 
     def __init__(self, choices, *fields):
