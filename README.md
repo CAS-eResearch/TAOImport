@@ -38,7 +38,8 @@ on the command line with the `-s` or `--script` option:
 taoconvert -s examples/sage.py
 ```
 
-The control script should consist of the following parts:
+The control script should consist of a class that inherits from `tao.Converter`,
+and should override appropriate methods to implement the following features:
 
  1. Extra arguments to be specified on the command line.
  2. Simulation parameters.
@@ -51,38 +52,48 @@ The control script should consist of the following parts:
 The extra arguments are a way to allow transient information to be given
 to the converter that relates directly to a specific data type. For example,
 when converting SAGE data one needs to provide the path in which the
-output trees are stored. This is done with something like the following:
+output trees are stored, the SAGE parameter file, the simulation box size, and
+an a-list file.
+
+To specify arguments, one must override the class method `add_arguments`:
 
 ```python
-parser.add_argument(
-  '--trees-dir',
-  default='.',
-  help='location of SAGE trees'
-)
+class SAGEConverter(tao.Converter):
+  @classmethod
+  def add_arguments(self, parser):
+    parser.add_argument(
+      '--trees-dir',
+      default='.',
+      help='location of SAGE trees'
+    )
 ```
 
-Note that `parser` is available in the control script without needing to
-import anything.
+In the instance methods of the overridden converter class, arguments parsed
+from the command-line can be accessed via the `args` member.
 
 ### Simulation Parameters ###
 
-Simulation parameters are given as a dictionary of values stored under
-the variable `simulation`. The required values are:
+Simulation parameters are given as a dictionary of values. The required values are:
 
  * The simulation box size, `box_size`.
  * The Hubble constant, `hubble`.
  * OmegaM, `omega_m`.
  * OmegaL, `omega_l`.
 
-For example:
+To supply these values override the instance method `get_simulation_data`:
 
 ```python
-simulation = {
-  'box_size': 62.5,
-  'hubble': 0.71,
-  'omega_m': 0.25,
-  'omega_l': 0.75,
-}
+class SAGEConverter(tao.Converter):
+  def get_simulation_data(self):
+    return {
+      'box_size': 62.5,
+      'hubble': 0.71,
+      'omega_m': 0.25,
+      'omega_l': 0.75,
+    }
+```
+
+### Snapshot Redshifts ###
 
 Snapshot redshifts are specified by setting a list-like value to the
 `snapshot_redshifts` variable name. For example:
