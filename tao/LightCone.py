@@ -35,7 +35,6 @@ class LightCone(Module):
     }
     generators = [
         GlobalIndices(),
-        WithinCRange(0, library['n_snapshots'], 'snapshot')
     ]
     validators = [
         Required('position_x', 'position_y', 'position_z',
@@ -43,4 +42,5 @@ class LightCone(Module):
                  'snapshot'),
         OverLittleH('position_x', 'position_y', 'position_z'),
         WithinRange(0.0, library['box_size'], 'position_x', 'position_y', 'position_z'),
+        WithinCRange(0, library['n_snapshots'], 'snapshot')
     ]

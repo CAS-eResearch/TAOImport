@@ -1,7 +1,9 @@
 from Module import Module
+from SED import SED
 from .validators import *
 
 class Dust(Module):
+    dependencies = [SED]
     fields = {
         'cold_gas': {
             'description': 'Cold gas mass',

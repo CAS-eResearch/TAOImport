@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-import argparse, os, sys, pprint
+import argparse, os, sys, pprint, imp, inspect
 import numpy as np, tao
 from tao.find_modules import find_modules
+from tao import Converter
 
 if __name__ == '__main__':
 
@@ -37,23 +38,28 @@ if __name__ == '__main__':
     # If the script exists we need to run it before parsing arguments,
     # or even bailing due to it being missing.
     if os.path.exists(script):
-
-        # Run the user script.
-        locals_dict = {}
-        globals_dict = {'np': np, 'tao': tao, 'parser': parser}
-        execfile(script, globals_dict, locals_dict)
+        script_mod = imp.load_source('name', script)
+        converter_cls = None
+        for name, obj in inspect.getmembers(script_mod):
+            if inspect.isclass(obj) and obj != Converter and issubclass(obj, Converter):
+                converter_cls = obj
+                break
+        if not converter_cls:
+            print 'Script does not contain a converter.'
+            sys.exit(1)
+        converter_cls.add_arguments(parser)
 
     # Now we can parse command line arguments.
     args = parser.parse_args()
 
-    # Now we can abort if the script is missing.
-    if not os.path.exists(script):
-        print 'Unable to find script: "%s"'%script_fn
-        sys.exit(1)
+    # Now instantiate the modules.
+    modules = [m(args) for m in modules]
 
     # Check if the user wants information about a field.
     if args.field:
         for mod in modules:
+            if mod.disabled:
+                continue
             if args.field in mod.fields:
                 pprint.pprint({args.field: mod.fields[args.field]})
                 sys.exit(0)
@@ -64,56 +70,17 @@ if __name__ == '__main__':
     if args.info:
         all_fields = {}
         for mod in modules:
+            if mod.disabled:
+                continue
             for field, details in mod.fields.iteritems():
                 all_fields[field] = details
         pprint.pprint(all_fields)
         sys.exit(0)
 
-    # Confirm we have enough basic information.
-    sim = locals_dict.get('simulation', None)
-    if sim is None:
-        print '\n'.join([
-            'No simulation information has been specified in your conversion script. ',
-            'Please add a dictionary of simulation information composed of the Hubble ',
-            'constant, OmegaM, OmegaL, and the box size.'
-        ])
-        sys.exit(1)
-    if 'hubble' not in sim:
-        print '\n'.join([
-            'No Hubble value found in simulation data.'
-        ])
-        sys.exit(1)
-    if 'omega_m' not in sim:
-        print '\n'.join([
-            'No OmegaM value found in simulation data.'
-        ])
-        sys.exit(1)
-    if 'omega_l' not in sim:
-        print '\n'.join([
-            'No OmegaL value found in simulation data.'
-        ])
-        sys.exit(1)
-    if 'box_size' not in sim:
-        print '\n'.join([
-            'No box size value found in simulation data.'
-        ])
-        sys.exit(1)
-    redshifts = locals_dict.get('snapshot_redshifts', None)
-    if redshifts is None:
-        print '\n'.join([
-            'No snapshot redshift data found.',
-        ])
+    # Now we can abort if the script is missing.
+    if not os.path.exists(script):
+        print 'Unable to find script: "%s"'%script_fn
         sys.exit(1)
 
-    # Cache some information for other parts of the system.
-    tao.library['box_size'] = sim['box_size']
-    tao.library['redshifts'] = redshifts
-    tao.library['n_snapshots'] = len(redshifts)
-
-    # Now run the exporter.
-    with tao.Exporter(args.output, modules, locals_dict.get('mapping', None), arguments=args) as exp:
-        exp.set_cosmology(sim['hubble'], sim['omega_m'], sim['omega_l'])
-        exp.set_box_size(sim['box_size'])
-        exp.set_redshifts(redshifts)
-        for tree in locals_dict['iterate_trees'](args):
-            exp.add_tree(tree)
+    converter = converter_cls(modules, args)
+    converter.convert()

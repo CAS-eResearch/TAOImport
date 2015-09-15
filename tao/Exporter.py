@@ -1,29 +1,14 @@
 import h5py, logging, numpy as np
 from LightCone import LightCone
-from Converter import Converter
-from datatype import datatype
 
 logger = logging.getLogger(__name__)
 
 class Exporter(object):
 
-    def __init__(self, filename, modules, mapping=None, converter=None, arguments=None):
-        self.arguments = arguments
-        self.modules = modules
-        self.mapping = mapping
+    def __init__(self, filename, converter):
+        self.converter = converter
         self.chunk_size = 10000
-        self.set_datatype(datatype)
         self.open_file(filename + '.h5')
-        self.converter = converter if converter else self.default_converter()
-
-    def default_converter(self):
-        modules = [cls(self.mapping, self.arguments) for cls in self.modules]
-        return Converter(modules, self.mapping, self.galaxy_type)
-
-    def set_datatype(self, dtype):
-        if self.mapping is not None:
-            dtype = np.dtype(dtype.descr + self.mapping.fields)
-        self.galaxy_type = dtype
 
     def open_file(self, filename):
         self.file = h5py.File(filename, 'w')
@@ -39,7 +24,7 @@ class Exporter(object):
         )
         self.tree_displs[0] = 0
         self.galaxies = self.file.create_dataset(
-            'galaxies', (0,), dtype=self.galaxy_type,
+            'galaxies', (0,), dtype=self.converter.galaxy_type,
             chunks=(self.chunk_size,),
             maxshape=(None,)
         )
@@ -61,27 +46,23 @@ class Exporter(object):
         self.file.close()
 
     def add_tree(self, tree):
-        logger.info('Resizing counts from %d to %d'%(self.tree_counts.shape[0], self.tree_counts.shape[0] + 1))
+        cnt = len(tree)
+        displ = self.tree_displs[-1]
         self.tree_counts.resize((self.tree_counts.shape[0] + 1,))
-        logger.info('Resizing displs from %d to %d'%(self.tree_displs.shape[0], self.tree_displs.shape[0] + 1))
         self.tree_displs.resize((self.tree_displs.shape[0] + 1,))
-        self.tree_counts[-1] = len(tree)
-        self.tree_displs[-1] = self.tree_displs[-2] + len(tree)
-        logger.info('Resizing galaxies from %d to %d'%(self.galaxies.shape[0], self.galaxies.shape[0] + len(tree)))
-        self.galaxies.resize((self.galaxies.shape[0] + len(tree),))
+        self.tree_counts[-1] = cnt
+        self.tree_displs[-1] = displ + cnt
+        self.galaxies.resize((self.galaxies.shape[0] + cnt,))
         dst_tree = self.converter.convert_tree(tree)
-        logger.info('Writing tree from %d to %d'%(self.tree_displs[-2], self.tree_counts[-1]))
-        for field in  dst_tree.dtype.names:
-            logger.info('Writing field %s'%field)
-            self.galaxies[self.tree_displs[-2]:self.tree_displs[-1],field] = dst_tree
+        self.galaxies[displ:displ + cnt] = dst_tree
 
     def set_cosmology(self, hubble, omega_m, omega_l):
-        self.hubble[0] = hubble
-        self.omega_m[0] = omega_m
-        self.omega_l[0] = omega_l
+        self.hubble[0] = float(hubble)
+        self.omega_m[0] = float(omega_m)
+        self.omega_l[0] = float(omega_l)
 
     def set_box_size(self, box_size):
-        self.box_size[0] = box_size
+        self.box_size[0] = float(box_size)
 
     def set_redshifts(self, redshifts):
         self.redshifts.resize((len(redshifts),))

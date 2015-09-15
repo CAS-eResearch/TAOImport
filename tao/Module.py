@@ -6,8 +6,8 @@ def set_module(mod, obj):
 
 class Module(object):
 
-    def __init__(self, mapping=None, arguments=None):
-        self.mapping = mapping if mapping else Mapping()
+    def __init__(self, arguments=None):
+        self.mapping = None
         self.validators = [set_module(self, v) for v in getattr(self, 'validators', [])]
         self.generators = [set_module(self, g) for g in getattr(self, 'generators', [])]
         self.disabled = False

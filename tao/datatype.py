@@ -8,7 +8,7 @@ datatype = np.dtype([
     ('local_index', np.uint32),
     ('tree_index', np.uint32),
     ('descendant', np.int32),
-    ('global_descendant', np.uint64),
+    ('global_descendant', np.int64),
     ('merge_type', np.uint32),
     ('position_x', np.float32), ('position_y', np.float32), ('position_z', np.float32),
     ('velocity_x', np.float32), ('velocity_y', np.float32), ('velocity_z', np.float32),
@@ -18,4 +18,5 @@ datatype = np.dtype([
     ('cold_gas', np.float32),
     ('metals_cold_gas', np.float32),
     ('disk_scale_radius', np.float32),
+    ('subsize', np.uint32),
 ])

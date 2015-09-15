@@ -1,8 +1,10 @@
 from Module import Module
+from LightCone import LightCone
 from .validators import *
 from .generators import *
 
 class SED(Module):
+    dependencies = [LightCone]
     fields = {
         'descendant': {
             'description': 'Tree-local index of the descendant galaxy',
@@ -10,9 +12,11 @@ class SED(Module):
         'merge_type': {
             'description': 'Flag indicating type of merger',
             'choices': {
-                0: 'Major merger',
-                1: 'Minor merger',
-                2: 'Disruption',
+                0: 'None',
+                1: 'Major merger',
+                2: 'Minor merger',
+                3: 'Disruption',
+                4: 'ICS',
             },
         },
         'dt': {
@@ -46,7 +50,7 @@ class SED(Module):
                  'sfr_disk', 'sfr_bulge',
                  'sfr_disk_z', 'sfr_bulge_z'),
         TreeLocalIndex('descendant'),
-        Choice([0, 1, 2], 'merge_type'),
+        Choice([0, 1, 2, 3, 4], 'merge_type'),
         NonZero('dt'),
         Positive('sfr_disk', 'sfr_bulge', 'sfr_disk_z', 'sfr_bulge_z', 'dt'),
     ]
