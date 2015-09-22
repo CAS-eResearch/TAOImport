@@ -2,7 +2,6 @@ import numpy as np
 from .library import library
 from .Exporter import Exporter
 from .Mapping import Mapping
-from .datatype import datatype
 from .xml import get_settings_xml
 
 class ConversionError(Exception):
@@ -14,9 +13,24 @@ class Converter(object):
         self.modules = modules
         self.args = args
         self.mapping = Mapping(self, self.get_mapping_table(), self.get_extra_fields())
-        self.galaxy_type = np.dtype(datatype.descr + self.mapping.fields)
+        self.make_datatype()
         for mod in self.modules:
             mod.mapping = self.mapping
+
+    def make_datatype(self):
+        all_fields = []
+        seen_fields = set()
+        for mod in self.modules:
+            new_fields = mod.get_numpy_fields()
+            for nf in new_fields:
+                if nf[0] not in seen_fields:
+                    all_fields.append(nf)
+                    seen_fields.add(nf[0])
+        for mf in self.mapping.fields:
+            if mf[0] not in seen_fields:
+                all_fields.append(mf)
+                seen_fields.add(mf[0])
+        self.galaxy_type = np.dtype(all_fields)
 
     def convert(self):
         sim = self.get_simulation_data()
@@ -97,40 +111,42 @@ class Converter(object):
         for field, dtype in self.mapping.fields:
             dst_tree[field] = src_tree[field]
 
-        self.depth_first_order(dst_tree)
+        # Now run any post conversion routines.
+        for mod in self.modules:
+            mod.post_conversion(dst_tree)
 
         return dst_tree
 
-    def depth_first_order(self, tree):
-        dfi = [0]
-        parents = {}
-        order = np.empty(len(tree))
+    # def depth_first_order(self, tree):
+    #     dfi = [0]
+    #     parents = {}
+    #     order = np.empty(len(tree))
 
-        def _recurse(idx):
-            order[idx] = dfi[0]
-            dfi[0] += 1
-            tree['subsize'][idx] = 1
-            if idx in parents:
-                for par in parents[idx]:
-                    tree['subsize'][idx] += _recurse(par)
-            return tree['subsize'][idx]
+    #     def _recurse(idx):
+    #         order[idx] = dfi[0]
+    #         dfi[0] += 1
+    #         tree['subsize'][idx] = 1
+    #         if idx in parents:
+    #             for par in parents[idx]:
+    #                 tree['subsize'][idx] += _recurse(par)
+    #         return tree['subsize'][idx]
 
-        # Find the roots and parents.
-        roots = []
-        for ii in range(len(tree)):
-            desc = tree['descendant'][ii]
-            if desc == -1:
-                roots.append(ii)
-            else:
-                parents.setdefault(desc, []).append(ii)
+    #     # Find the roots and parents.
+    #     roots = []
+    #     for ii in range(len(tree)):
+    #         desc = tree['descendant'][ii]
+    #         if desc == -1:
+    #             roots.append(ii)
+    #         else:
+    #             parents.setdefault(desc, []).append(ii)
 
-        # Recurse to find the new ordering.
-        for ii in roots:
-            _recurse(ii)
+    #     # Recurse to find the new ordering.
+    #     for ii in roots:
+    #         _recurse(ii)
 
-        # Remap everything.
-        for ii in range(len(tree)):
-            tree['local_index'][ii] = order[tree['local_index'][ii]]
-            if tree['descendant'][ii] != -1:
-                tree['descendant'][ii] = order[tree['descendant'][ii]]
-                tree['global_descendant'][ii] = tree['global_index'][tree['descendant'][ii]]
+    #     # Remap everything.
+    #     for ii in range(len(tree)):
+    #         tree['local_index'][ii] = order[tree['local_index'][ii]]
+    #         if tree['descendant'][ii] != -1:
+    #             tree['descendant'][ii] = order[tree['descendant'][ii]]
+    #             tree['global_descendant'][ii] = tree['global_index'][tree['descendant'][ii]]

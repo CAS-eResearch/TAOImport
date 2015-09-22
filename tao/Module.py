@@ -31,6 +31,19 @@ class Module(object):
             if data is not None:
                 fields[name] = data
 
+    def get_numpy_fields(self):
+        if self.disabled:
+            return []
+        fields = [(n, d['type']) for n, d in self.fields.iteritems()]
+        seen_fields = set([f[0] for f in fields])
+        for generator in self.generators:
+            if hasattr(generator, 'fields'):
+                for field in generator.fields:
+                    if field[0] not in seen_fields:
+                        fields.append(field)
+                        seen_fields.add(field[0])
+        return fields
+
     def generate_fields(self, fields):
         if self.disabled:
             return
@@ -42,3 +55,9 @@ class Module(object):
             return
         for validator in self.validators:
             validator.validate_fields(fields)
+
+    def post_conversion(self, tree):
+        if self.disabled:
+            return
+        for generator in self.generators:
+            generator.post_conversion(tree)

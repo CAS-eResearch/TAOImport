@@ -1,23 +1,28 @@
+from collections import OrderedDict
+import numpy as np
 from Module import Module
 from SED import SED
 from .validators import *
 
 class Dust(Module):
     dependencies = [SED]
-    fields = {
-        'cold_gas': {
+    fields = OrderedDict([
+        ('cold_gas', {
             'description': 'Cold gas mass',
             'units': 'Msun/h',
-        },
-        'metals_cold_gas': {
+            'type': np.float32,
+        }),
+        ('metals_cold_gas', {
             'description': 'Cold gas metallicity mass',
             'units': 'Msun/h',
-        },
-        'disk_scale_radius': {
+            'type': np.float32,
+        }),
+        ('disk_scale_radius', {
             'description': 'Disk scale radius',
             'units': 'Mpc/h',
-        },
-    }
+            'type': np.float32,
+        }),
+    ])
     validators = [
         Required('cold_gas', 'metals_cold_gas', 'disk_scale_radius'),
         Positive('cold_gas', 'metals_cold_gas', 'disk_scale_radius'),

@@ -1,3 +1,5 @@
+from collections import OrderedDict
+import numpy as np
 from Module import Module
 from LightCone import LightCone
 from .validators import *
@@ -5,11 +7,12 @@ from .generators import *
 
 class SED(Module):
     dependencies = [LightCone]
-    fields = {
-        'descendant': {
+    fields = OrderedDict([
+        ('descendant', {
             'description': 'Tree-local index of the descendant galaxy',
-        },
-        'merge_type': {
+            'type': np.int32,
+        }),
+        ('merge_type', {
             'description': 'Flag indicating type of merger',
             'choices': {
                 0: 'None',
@@ -18,32 +21,39 @@ class SED(Module):
                 3: 'Disruption',
                 4: 'ICS',
             },
-        },
-        'dt': {
+            'type': np.uint32,
+        }),
+        ('dt', {
             'description': 'Time-step between this galaxy and parent',
             'units': 'Myears/h',
-        },
-        'sfr_disk': {
+            'type': np.float32,
+        }),
+        ('sfr_disk', {
             'description': 'Disk star formation rate',
             'units': 'Msun/year',
-        },
-        'sfr_bulge': {
+            'type': np.float32,
+        }),
+        ('sfr_bulge', {
             'description': 'Bulge star formation rate',
             'units': 'Msun/year',
-        },
-        'sfr_disk_z': {
+            'type': np.float32,
+        }),
+        ('sfr_disk_z', {
             'description': 'Disk metallicity star formation rate',
             'units': 'Msun/year',
-        },
-        'sfr_bulge_z': {
+            'type': np.float32,
+        }),
+        ('sfr_bulge_z', {
             'description': 'Bulge metallicity star formation rate',
             'units': 'Msun/year',
-        },
-    }
+            'type': np.float32,
+        }),
+    ])
     generators = [
         TreeIndices(),
         TreeLocalIndices(),
         GlobalDescendants(),
+        DepthFirstOrdering(),
     ]
     validators = [
         Required('descendant', 'merge_type', 'dt',

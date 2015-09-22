@@ -1,38 +1,51 @@
+from collections import OrderedDict
 from Module import Module
 from .validators import *
 from .generators import *
 from .library import library
 
 class LightCone(Module):
-    fields = {
-        'position_x': {
+    fields = OrderedDict([
+        ('type', {
+            'description': 'Type of galaxy',
+            'choices': [0, 1, 2],
+            'type': np.uint32,
+        }),
+        ('position_x', {
             'description': 'The x position of the galaxy',
             'units': 'Mpc/h',
-        },
-        'position_y': {
+            'type': np.float32,
+        }),
+        ('position_y', {
             'description': 'The y position of the galaxy',
             'units': 'Mpc/h',
-        },
-        'position_z': {
+            'type': np.float32,
+        }),
+        ('position_z', {
             'description': 'The z position of the galaxy',
             'units': 'Mpc/h',
-        },
-        'velocity_x': {
+            'type': np.float32,
+        }),
+        ('velocity_x', {
             'description': 'The x velocity of the galaxy',
             'units': 'km/s',
-        },
-        'velocity_y': {
+            'type': np.float32,
+        }),
+        ('velocity_y', {
             'description': 'The y velocity of the galaxy',
             'units': 'km/s',
-        },
-        'velocity_z': {
+            'type': np.float32,
+        }),
+        ('velocity_z', {
             'description': 'The z velocity of the galaxy',
             'units': 'km/s',
-        },
-        'snapshot': {
+            'type': np.float32,
+        }),
+        ('snapshot', {
             'description': 'The simulation snapshot number',
-        }
-    }
+            'type': np.uint32,
+        }),
+    ])
     generators = [
         GlobalIndices(),
     ]
