@@ -58,6 +58,6 @@ def get_settings_xml(dtype):
             type = 'long long'
         else:
             type = 'float'
-        fields.append('    <Field Type="%s">%s</Field>'%(name, type))
+        fields.append('    <Field Type="%s">%s</Field>'%(type, name))
     fields = '\n'.join(fields)
     return settings_tmpl.format(fields=fields, box_size=library['box_size'])
