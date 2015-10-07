@@ -52,6 +52,7 @@ settings_tmpl = """<settings>
 def get_settings_xml(dtype):
     fields = []
     for name, type in dtype.descr:
+        type = np.dtype(type)
         if type in [np.int32, np.uint32]:
             type = 'int'
         elif type in [np.int64, np.uint64]:
