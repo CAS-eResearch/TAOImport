@@ -2,8 +2,8 @@ import numpy as np
 from .library import library
 
 settings_tmpl = """<settings>
-{fields}
   <sageinput>
+{fields}
   </sageinput>
   <PGDB>
     <ScienceModuleDBUserName></ScienceModuleDBUserName>

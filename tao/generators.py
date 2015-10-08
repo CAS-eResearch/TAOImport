@@ -18,7 +18,7 @@ class Generator(object):
 
 class GlobalIndices(Generator):
     fields = [
-        ('global_index', np.uint64),
+        ('globalindex', np.uint64),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -26,14 +26,14 @@ class GlobalIndices(Generator):
         self.index = 0
 
     def generate_fields(self, fields):
-        gidxs = self.get_field(fields, 'global_index', np.uint64)
+        gidxs = self.get_field(fields, 'globalindex', np.uint64)
         for ii in range(len(gidxs)):
             gidxs[ii] = self.index + ii
         self.index += ii
 
 class TreeIndices(Generator):
     fields = [
-        ('tree_index', np.uint32),
+        ('treeindex', np.uint32),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -41,29 +41,29 @@ class TreeIndices(Generator):
         self.index = 0
 
     def generate_fields(self, fields):
-        tidxs = self.get_field(fields, 'tree_index', np.uint32)
+        tidxs = self.get_field(fields, 'treeindex', np.uint32)
         tidxs[:] = self.index
         self.index += 1
 
 class TreeLocalIndices(Generator):
     fields = [
-        ('local_index', np.uint32),
+        ('localindex', np.uint32),
     ]
 
     def generate_fields(self, fields):
-        lidxs = self.get_field(fields, 'local_index', np.uint32)
+        lidxs = self.get_field(fields, 'localindex', np.uint32)
         for ii in range(len(lidxs)):
             lidxs[ii] = ii
 
 class GlobalDescendants(Generator):
     fields = [
-        ('global_descendant', np.int64),
+        ('globaldescendant', np.int64),
     ]
 
     def generate_fields(self, fields):
-        gdescs = self.get_field(fields, 'global_descendant', np.uint32)
+        gdescs = self.get_field(fields, 'globaldescendant', np.uint32)
         descs = fields['descendant']
-        gidxs = fields['global_index']
+        gidxs = fields['globalindex']
         for ii in range(len(gidxs)):
             if descs[ii] != -1:
                 gdescs[ii] = gidxs[descs[ii]]
@@ -104,7 +104,7 @@ class DepthFirstOrdering(Generator):
 
         # Remap everything.
         for ii in range(len(tree)):
-            tree['local_index'][ii] = order[tree['local_index'][ii]]
+            tree['localindex'][ii] = order[tree['localindex'][ii]]
             if tree['descendant'][ii] != -1:
                 tree['descendant'][ii] = order[tree['descendant'][ii]]
-                tree['global_descendant'][ii] = tree['global_index'][tree['descendant'][ii]]
+                tree['globaldescendant'][ii] = tree['globalindex'][tree['descendant'][ii]]

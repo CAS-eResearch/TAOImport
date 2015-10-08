@@ -12,7 +12,7 @@ class SED(Module):
             'description': 'Tree-local index of the descendant galaxy',
             'type': np.int32,
         }),
-        ('merge_type', {
+        ('mergetype', {
             'description': 'Flag indicating type of merger',
             'choices': {
                 0: 'None',
@@ -28,22 +28,22 @@ class SED(Module):
             'units': 'Myears/h',
             'type': np.float32,
         }),
-        ('sfr_disk', {
+        ('sfrdisk', {
             'description': 'Disk star formation rate',
             'units': 'Msun/year',
             'type': np.float32,
         }),
-        ('sfr_bulge', {
+        ('sfrbulge', {
             'description': 'Bulge star formation rate',
             'units': 'Msun/year',
             'type': np.float32,
         }),
-        ('sfr_disk_z', {
+        ('sfrdiskz', {
             'description': 'Disk metallicity star formation rate',
             'units': 'Msun/year',
             'type': np.float32,
         }),
-        ('sfr_bulge_z', {
+        ('sfrbulgez', {
             'description': 'Bulge metallicity star formation rate',
             'units': 'Msun/year',
             'type': np.float32,
@@ -56,13 +56,13 @@ class SED(Module):
         DepthFirstOrdering(),
     ]
     validators = [
-        Required('descendant', 'merge_type', 'dt',
-                 'sfr_disk', 'sfr_bulge',
-                 'sfr_disk_z', 'sfr_bulge_z'),
+        Required('descendant', 'mergetype', 'dt',
+                 'sfrdisk', 'sfrbulge',
+                 'sfrdiskz', 'sfrbulgez'),
         TreeLocalIndex('descendant'),
-        Choice([0, 1, 2, 3, 4], 'merge_type'),
+        Choice([0, 1, 2, 3, 4], 'mergetype'),
         NonZero('dt'),
-        Positive('sfr_disk', 'sfr_bulge', 'sfr_disk_z', 'sfr_bulge_z', 'dt'),
+        Positive('sfrdisk', 'sfrbulge', 'sfrdiskz', 'sfrbulgez', 'dt'),
     ]
 
     @classmethod

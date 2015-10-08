@@ -7,25 +7,25 @@ from .validators import *
 class Dust(Module):
     dependencies = [SED]
     fields = OrderedDict([
-        ('cold_gas', {
+        ('coldgas', {
             'description': 'Cold gas mass',
             'units': 'Msun/h',
             'type': np.float32,
         }),
-        ('metals_cold_gas', {
+        ('metalscoldgas', {
             'description': 'Cold gas metallicity mass',
             'units': 'Msun/h',
             'type': np.float32,
         }),
-        ('disk_scale_radius', {
+        ('diskscaleradius', {
             'description': 'Disk scale radius',
             'units': 'Mpc/h',
             'type': np.float32,
         }),
     ])
     validators = [
-        Required('cold_gas', 'metals_cold_gas', 'disk_scale_radius'),
-        Positive('cold_gas', 'metals_cold_gas', 'disk_scale_radius'),
+        Required('coldgas', 'metalscoldgas', 'diskscaleradius'),
+        Positive('coldgas', 'metalscoldgas', 'diskscaleradius'),
     ]
 
     @classmethod

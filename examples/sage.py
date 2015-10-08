@@ -69,29 +69,29 @@ class SAGEConverter(tao.Converter):
         """Returns a mapping from TAO fields to SAGE fields."""
 
         return {
-            'position_x': 'Pos_x',
-            'position_y': 'Pos_y',
-            'position_z': 'Pos_z',
-            'velocity_x': 'Vel_x',
-            'velocity_y': 'Vel_y',
-            'velocity_z': 'Vel_z',
-            'snapshot': 'SnapNum',
-            'merge_type': 'mergeType',
+            'posx': 'Pos_x',
+            'posy': 'Pos_y',
+            'posz': 'Pos_z',
+            'velx': 'Vel_x',
+            'vely': 'Vel_y',
+            'velz': 'Vel_z',
+            'snapnum': 'SnapNum',
+            'mergetype': 'mergeType',
             'dt': 'dT',
-            'sfr_disk': 'SfrDisk',
-            'sfr_bulge': 'SfrBulge',
-            'sfr_disk_z': 'SfrDiskZ',
-            'sfr_bulge_z': 'SfrBulgeZ',
-            'cold_gas': 'ColdGas',
-            'metals_cold_gas': 'MetalsColdGas',
-            'disk_scale_radius': 'DiskScaleRadius',
+            'sfrdisk': 'SfrDisk',
+            'sfrbulge': 'SfrBulge',
+            'sfrdiskz': 'SfrDiskZ',
+            'sfrbulgez': 'SfrBulgeZ',
+            'coldgas': 'ColdGas',
+            'metalscoldgas': 'MetalsColdGas',
+            'diskscaleradius': 'DiskScaleRadius',
         }
 
     def get_extra_fields(self):
         """Returns a list of SAGE fields and types to include."""
 
         return [
-            ('Type', np.int32),
+            ('ObjectType', np.int32),
             ('GalaxyIndex', np.int64),
             ('CentralGalaxyIndex', np.int64),
             ('SAGEHaloIndex', np.int32),
@@ -164,7 +164,7 @@ class SAGEConverter(tao.Converter):
 
         src_type = np.dtype([
             ('SnapNum', np.int32),
-            ('Type', np.int32),
+            ('ObjectType', np.int32),
             ('GalaxyIndex', np.int64),
             ('CentralGalaxyIndex', np.int64),
             ('SAGEHaloIndex', np.int32),

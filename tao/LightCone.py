@@ -6,42 +6,42 @@ from .library import library
 
 class LightCone(Module):
     fields = OrderedDict([
-        ('type', {
+        ('objecttype', {
             'description': 'Type of galaxy',
             'choices': [0, 1, 2],
             'type': np.uint32,
         }),
-        ('position_x', {
+        ('posx', {
             'description': 'The x position of the galaxy',
             'units': 'Mpc/h',
             'type': np.float32,
         }),
-        ('position_y', {
+        ('posy', {
             'description': 'The y position of the galaxy',
             'units': 'Mpc/h',
             'type': np.float32,
         }),
-        ('position_z', {
+        ('posz', {
             'description': 'The z position of the galaxy',
             'units': 'Mpc/h',
             'type': np.float32,
         }),
-        ('velocity_x', {
+        ('velx', {
             'description': 'The x velocity of the galaxy',
             'units': 'km/s',
             'type': np.float32,
         }),
-        ('velocity_y', {
+        ('vely', {
             'description': 'The y velocity of the galaxy',
             'units': 'km/s',
             'type': np.float32,
         }),
-        ('velocity_z', {
+        ('velz', {
             'description': 'The z velocity of the galaxy',
             'units': 'km/s',
             'type': np.float32,
         }),
-        ('snapshot', {
+        ('snapnum', {
             'description': 'The simulation snapshot number',
             'type': np.uint32,
         }),
@@ -50,10 +50,10 @@ class LightCone(Module):
         GlobalIndices(),
     ]
     validators = [
-        Required('position_x', 'position_y', 'position_z',
-                 'velocity_x', 'velocity_y', 'velocity_z',
-                 'snapshot'),
-        OverLittleH('position_x', 'position_y', 'position_z'),
-        WithinRange(0.0, library['box_size'], 'position_x', 'position_y', 'position_z'),
-        WithinCRange(0, library['n_snapshots'], 'snapshot')
+        Required('posx', 'posy', 'posz',
+                 'velx', 'vely', 'velz',
+                 'snapnum'),
+        OverLittleH('posx', 'posy', 'posz'),
+        WithinRange(0.0, library['box_size'], 'posx', 'posy', 'posz'),
+        WithinCRange(0, library['n_snapshots'], 'snapnum')
     ]
