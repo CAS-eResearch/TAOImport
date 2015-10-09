@@ -78,7 +78,7 @@ class DepthFirstOrdering(Generator):
     def post_conversion(self, tree):
         dfi = [0]
         parents = {}
-        order = np.empty(len(tree))
+        order = np.empty(len(tree), np.uint32)
 
         def _recurse(idx):
             order[idx] = dfi[0]
@@ -108,3 +108,13 @@ class DepthFirstOrdering(Generator):
             if tree['descendant'][ii] != -1:
                 tree['descendant'][ii] = order[tree['descendant'][ii]]
                 tree['globaldescendant'][ii] = tree['globalindex'][tree['descendant'][ii]]
+
+        # Sort the array.
+        tree.sort(order=['localindex'])
+
+        # Run some final checks on the descendants.
+        for ii in range(len(tree)):
+            desc = tree['descendant'][ii]
+            if desc != -1:
+                assert desc != ii, 'Descendant references same object.'
+                assert desc < len(tree), 'Invalid descendant index.'
