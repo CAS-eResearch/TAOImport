@@ -61,7 +61,7 @@ class GlobalDescendants(Generator):
     ]
 
     def generate_fields(self, fields):
-        gdescs = self.get_field(fields, 'globaldescendant', np.uint32)
+        gdescs = self.get_field(fields, 'globaldescendant', np.int64)
         descs = fields['descendant']
         gidxs = fields['globalindex']
         for ii in range(len(gidxs)):
