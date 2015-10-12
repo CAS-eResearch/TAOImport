@@ -23,13 +23,13 @@ class Converter(object):
         for mod in self.modules:
             new_fields = mod.get_numpy_fields()
             for nf in new_fields:
-                if nf[0] not in seen_fields:
+                if nf[0].lower() not in seen_fields:
                     all_fields.append(nf)
-                    seen_fields.add(nf[0])
+                    seen_fields.add(nf[0].lower())
         for mf in self.mapping.fields:
-            if mf[0] not in seen_fields:
+            if mf[0].lower() not in seen_fields:
                 all_fields.append(mf)
-                seen_fields.add(mf[0])
+                seen_fields.add(mf[0].lower())
         self.galaxy_type = np.dtype(all_fields)
 
     def convert(self):

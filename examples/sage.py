@@ -91,7 +91,6 @@ class SAGEConverter(tao.Converter):
         """Returns a list of SAGE fields and types to include."""
 
         return [
-            ('ObjectType', np.int32),
             ('GalaxyIndex', np.int64),
             ('CentralGalaxyIndex', np.int64),
             ('SAGEHaloIndex', np.int32),
