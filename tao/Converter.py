@@ -102,14 +102,11 @@ class Converter(object):
             mod.generate_fields(fields)
 
         # Now we can merge the fields into the tree.
-        for name, values in fields.iteritems():
-            x = dst_tree[name]
-            x[:] = values
+        self._merge_fields(fields, dst_tree)
 
         # Perform a direct transfer of fields from within the
         # mapping that are flagged.
-        for field, dtype in self.mapping.fields:
-            dst_tree[field] = src_tree[field]
+        self._transfer_fields(src_tree, dst_tree)
 
         # Now run any post conversion routines.
         for mod in self.modules:
@@ -117,36 +114,11 @@ class Converter(object):
 
         return dst_tree
 
-    # def depth_first_order(self, tree):
-    #     dfi = [0]
-    #     parents = {}
-    #     order = np.empty(len(tree))
+    def _merge_fields(self, fields, dst_tree):
+        for name, values in fields.iteritems():
+            x = dst_tree[name]
+            x[:] = values
 
-    #     def _recurse(idx):
-    #         order[idx] = dfi[0]
-    #         dfi[0] += 1
-    #         tree['subsize'][idx] = 1
-    #         if idx in parents:
-    #             for par in parents[idx]:
-    #                 tree['subsize'][idx] += _recurse(par)
-    #         return tree['subsize'][idx]
-
-    #     # Find the roots and parents.
-    #     roots = []
-    #     for ii in range(len(tree)):
-    #         desc = tree['descendant'][ii]
-    #         if desc == -1:
-    #             roots.append(ii)
-    #         else:
-    #             parents.setdefault(desc, []).append(ii)
-
-    #     # Recurse to find the new ordering.
-    #     for ii in roots:
-    #         _recurse(ii)
-
-    #     # Remap everything.
-    #     for ii in range(len(tree)):
-    #         tree['local_index'][ii] = order[tree['local_index'][ii]]
-    #         if tree['descendant'][ii] != -1:
-    #             tree['descendant'][ii] = order[tree['descendant'][ii]]
-    #             tree['global_descendant'][ii] = tree['global_index'][tree['descendant'][ii]]
+    def _transfer_fields(self, src_tree, dst_tree):
+        for field, dtype in self.mapping.fields:
+            dst_tree[field] = src_tree[field]
