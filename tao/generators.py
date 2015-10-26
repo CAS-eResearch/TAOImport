@@ -1,4 +1,7 @@
+from __future__ import print_function
 import numpy as np
+import time as time
+import sys
 
 class Generator(object):
 
@@ -18,7 +21,7 @@ class Generator(object):
 
 class GlobalIndices(Generator):
     fields = [
-        ('globalindex', np.uint64),
+        ('globalindex', np.int64),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -26,14 +29,13 @@ class GlobalIndices(Generator):
         self.index = 0
 
     def generate_fields(self, fields):
-        gidxs = self.get_field(fields, 'globalindex', np.uint64)
-        for ii in range(len(gidxs)):
-            gidxs[ii] = self.index + ii
-        self.index += ii
+        gidxs = self.get_field(fields, 'globalindex', np.int64)
+        gidxs[:] = np.arange(self.index, self.index+len(gidxs),1,dtype=np.int64)
+        self.index += len(gidxs)-1
 
 class TreeIndices(Generator):
     fields = [
-        ('treeindex', np.uint32),
+        ('treeindex', np.int32),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -41,20 +43,19 @@ class TreeIndices(Generator):
         self.index = 0
 
     def generate_fields(self, fields):
-        tidxs = self.get_field(fields, 'treeindex', np.uint32)
+        tidxs = self.get_field(fields, 'treeindex', np.int32)
         tidxs[:] = self.index
         self.index += 1
 
 class TreeLocalIndices(Generator):
     fields = [
-        ('localindex', np.uint32),
+        ('localindex', np.int32),
     ]
 
     def generate_fields(self, fields):
-        lidxs = self.get_field(fields, 'localindex', np.uint32)
-        for ii in range(len(lidxs)):
-            lidxs[ii] = ii
-
+        lidxs = self.get_field(fields, 'localindex', np.int32)
+        lidxs[:] = np.arange(0,len(lidxs),1,dtype=np.int32)
+            
 class GlobalDescendants(Generator):
     fields = [
         ('globaldescendant', np.int64),
@@ -64,21 +65,22 @@ class GlobalDescendants(Generator):
         gdescs = self.get_field(fields, 'globaldescendant', np.int64)
         descs = fields['descendant']
         gidxs = fields['globalindex']
-        for ii in range(len(gidxs)):
-            if descs[ii] != -1:
-                gdescs[ii] = gidxs[descs[ii]]
-            else:
-                gdescs[ii] = -1
+
+        gdescs[:] = descs
+        ind = (np.where(descs != -1))[0]
+        if len(ind) > 0:
+            gdescs[ind] = gidxs[descs[ind]]
 
 class DepthFirstOrdering(Generator):
     fields = [
-        ('subsize', np.uint32),
+        ('subsize', np.int32),
     ]
 
     def post_conversion(self, tree):
+        tstart = time.time()
         dfi = [0]
         parents = {}
-        order = np.empty(len(tree), np.uint32)
+        order = np.empty(len(tree), np.int32)
 
         def _recurse(idx):
             order[idx] = dfi[0]
