@@ -9,7 +9,7 @@ class LightCone(Module):
         ('objecttype', {
             'description': 'Type of galaxy',
             'choices': [0, 1, 2],
-            'type': np.uint32,
+            'type': np.int32,
         }),
         ('posx', {
             'description': 'The x position of the galaxy',
@@ -43,7 +43,7 @@ class LightCone(Module):
         }),
         ('snapnum', {
             'description': 'The simulation snapshot number',
-            'type': np.uint32,
+            'type': np.int32,
         }),
     ])
     generators = [
