@@ -33,12 +33,13 @@ class TreeLocalIndex(FieldValidator):
         for fld in self.fields:
             if fld not in fields:
                 continue
+
             data = fields[fld]
-            for val in data:
-                if val < -1 or val >= len(data):
-                    msg = 'Invalid tree-local index in "%s".'%fld
-                    msg += ' Valid index range is [-1, %d), but found value of %d.'%(len(data), val)
-                    raise ValidationError(msg)
+            if min(data) < -1 or max(data) >= len(data):
+                msg = 'Invalid tree-local index in "%s".'%fld
+                msg += ' Valid index range is [-1, %d), but found value of min,max=[%d,%d].'%(len(data), min(data),max(data))
+                raise ValidationError(msg)
+                
 
 class Positive(FieldValidator):
 
@@ -46,26 +47,28 @@ class Positive(FieldValidator):
         for fld in self.fields:
             if fld not in fields:
                 continue
-            data = fields[fld]
-            for val in data:
-                if val < 0:
-                    msg = 'Invalid value in "%s".'%fld
-                    msg += ' Should be positive, but found value of %d.'%val
-                    raise ValidationError(msg)
 
+            data = fields[fld]
+            if min(data) < 0:
+                msg = 'Invalid value in "%s".'%fld
+                msg += ' Should be positive, but found value of %s.'%min(data)
+                raise ValidationError(msg)
+
+        
 class NonZero(FieldValidator):
 
     def validate_fields(self, fields):
         for fld in self.fields:
             if fld not in fields:
                 continue
-            data = fields[fld]
-            for val in data:
-                if val == 0:
-                    msg = 'Invalid value in "%s".'%fld
-                    msg += ' Should be non-zero.'
-                    raise ValidationError(msg)
 
+            data = set(fields[fld])
+            if 0 in data:
+                msg = 'Invalid value in "%s".'%fld
+                msg += ' Should be non-zero.'
+                raise ValidationError(msg)
+                
+        
 class WithinRange(FieldValidator):
 
     def __init__(self, lower, upper, *fields):
@@ -77,13 +80,14 @@ class WithinRange(FieldValidator):
         for fld in self.fields:
             if fld not in fields:
                 continue
-            data = fields[fld]
-            for val in data:
-                if val < self.lower or val > self.upper:
-                    msg = 'Invalid value in "%s".'%fld
-                    msg += ' Should be within range [%s, %s], but found value of %s.'%(self.lower, self.upper, val)
-                    raise ValidationError(msg)
 
+            data = fields[fld]
+            if min(data) < self.lower or max(data) > self.upper:
+                    msg = 'Invalid values in "%s".'%fld
+                    msg += ' Should be within range [%s, %s], but found value of min,max=[%s,%s].'%(self.lower, self.upper, min(data),max(data))
+                    raise ValidationError(msg)
+                
+        
 class WithinCRange(FieldValidator):
 
     def __init__(self, lower, upper, *fields):
@@ -95,13 +99,14 @@ class WithinCRange(FieldValidator):
         for fld in self.fields:
             if fld not in fields:
                 continue
+
             data = fields[fld]
-            for val in data:
-                if val < self.lower or val > (self.upper - 1):
+            if min(data) < self.lower or max(data) > (self.upper-1):
                     msg = 'Invalid value in "%s".'%fld
-                    msg += ' Should be within range [%s, %s], but found value of %s.'%(self.lower, self.upper, val)
+                    msg += ' Should be within range [%s, %s], but found value of min,max= [%s,%s].'%(self.lower, self.upper, min(data), max(data))
                     raise ValidationError(msg)
 
+            
 class Choice(FieldValidator):
 
     def __init__(self, choices, *fields):
@@ -112,9 +117,10 @@ class Choice(FieldValidator):
         for fld in self.fields:
             if fld not in fields:
                 continue
-            data = fields[fld]
-            for val in data:
-                if val not in self.choices:
-                    msg = 'Invalid choice in "%s".'%fld
-                    msg += ' Valid choices are %s, but found value of %d.'%(self.choices, val)
-                    raise ValidationError(msg)
+
+            diff = set(fields[fld]) - self.choices
+            if len(diff) > 0:
+                msg = 'Invalid choice in "%s".'%fld
+                msg += ' Valid choices are %s, but found %s.'%(self.choices, diff)
+                raise ValidationError(msg)
+                
