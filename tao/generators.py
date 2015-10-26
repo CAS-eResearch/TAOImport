@@ -91,32 +91,74 @@ class DepthFirstOrdering(Generator):
                     tree['subsize'][idx] += _recurse(par)
             return tree['subsize'][idx]
 
+        
         # Find the roots and parents.
-        roots = []
-        for ii in range(len(tree)):
-            desc = tree['descendant'][ii]
-            if desc == -1:
-                roots.append(ii)
-            else:
-                parents.setdefault(desc, []).append(ii)
+        t0 = time.time()
+        ind = (np.where(tree['descendant'] == -1))[0]
+        if len(ind) > 0:
+            roots = list(ind)
 
-        # Recurse to find the new ordering.
+        ind = (np.where(tree['descendant'] != -1))[0]
+        if len(ind) > 0:
+            for ii, desc in zip(ind,tree['descendant'][ind]):
+                parents.setdefault(desc,[]).append(ii)
+                
+        roots_time = time.time() - t0
+
+        ## used to time the previous recursive chunk.
+        ## now here so I don't break the code or file
+        ## output columns
+        recurse_time = 0.0
+        
+        ## find new ordering. avoid (slow) recursion
+        t0 = time.time()
+        start_dfi = [0]
+        tree['subsize'] = 0
         for ii in roots:
-            _recurse(ii)
-
+            stack = [ii]
+            visited = []
+            while len(stack) > 0:
+                idx = stack.pop()
+                visited.append(idx)
+                tree['subsize'][visited] += 1
+                order[idx] = start_dfi[0]
+                start_dfi[0] += 1
+                if idx in parents:
+                    for par in parents[idx]:
+                        stack.append(par)
+            
+        new_recurse_time = time.time() - t0
+        
         # Remap everything.
-        for ii in range(len(tree)):
-            tree['localindex'][ii] = order[tree['localindex'][ii]]
-            if tree['descendant'][ii] != -1:
-                tree['descendant'][ii] = order[tree['descendant'][ii]]
-                tree['globaldescendant'][ii] = tree['globalindex'][tree['descendant'][ii]]
+        t0 = time.time()
+        tree['localindex'] = order[tree['localindex']]
+        ind = (np.where(tree['descendant'] != -1))[0]
+        if len(ind) > 0:
+            tree['descendant'][ind] = order[tree['descendant'][ind]]
+            tree['globaldescendant'][ind] =  tree['globalindex'][tree['descendant'][ind]]
+        
+        remapping_time = time.time() - t0
 
         # Sort the array.
+        t0 = time.time()
         tree.sort(order=['localindex'])
-
+        sort_time = time.time() - t0
+        
         # Run some final checks on the descendants.
-        for ii in range(len(tree)):
-            desc = tree['descendant'][ii]
-            if desc != -1:
-                assert desc != ii, 'Descendant references same object.'
-                assert desc < len(tree), 'Invalid descendant index.'
+        t0 = time.time()
+        assert np.max(tree['descendant']) < len(tree),"Invalid descendant index."
+        ind = (np.where(tree['descendant'] != -1))[0]
+        if len(ind) > 0:
+            diff = set(tree['descendant'][ind] - ind) 
+            assert  0 not in diff,"Descendant references same object."
+                
+        validation_time = time.time() - t0
+        total_time = time.time() - tstart
+        print(" {:12d} {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%)  {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%)  {:10.6f}".format(len(tree),
+                                                                                                                                        remapping_time,remapping_time/total_time*100.0,
+                                                                                                                                        sort_time,sort_time/total_time*100.0,
+                                                                                                                                        validation_time,validation_time/total_time*100.0,
+                                                                                                                                        roots_time,roots_time/total_time*100.0,
+                                                                                                                                        recurse_time,recurse_time/total_time*100.0,
+                                                                                                                                        new_recurse_time,new_recurse_time/total_time*100.0,
+                                                                                                                                        total_time, file=sys.stderr))
