@@ -21,7 +21,7 @@ class SED(Module):
                 3: 'Disruption',
                 4: 'ICS',
             },
-            'type': np.uint32,
+            'type': np.int32,
         }),
         ('dt', {
             'description': 'Time-step between this galaxy and parent',
