@@ -53,14 +53,10 @@ def get_settings_xml(dtype):
     fields = []
     for name, type in dtype.descr:
         type = np.dtype(type)
-        if type in [np.int32]:
+        if type in [np.int32, np.uint32]:
             type = 'int'
-        elif type in [np.uint32]:
-            type = 'int' # TODO: change to 'unsigned int'
-        elif type in [np.int64]:
+        elif type in [np.int64, np.uint64]:
             type = 'long long'
-        elif type in [np.uint64]:
-            type = 'long long' # TODO: change 'unsigned long long'
         else:
             type = 'float'
         fields.append('    <Field Type="%s">%s</Field>'%(type, name))
