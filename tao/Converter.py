@@ -114,17 +114,14 @@ class Converter(object):
             
         t0 = time.time()
         # Now we can merge the fields into the tree.
-        for name, values in fields.iteritems():
-            x = dst_tree[name]
-            x[:] = values
+        self._merge_fields(fields, dst_tree)
 
         iter_time=time.time() - t0
 
         t0 = time.time() 
         # Perform a direct transfer of fields from within the
         # mapping that are flagged.
-        for field, dtype in self.mapping.fields:
-            dst_tree[field] = src_tree[field]
+        self._transfer_fields(src_tree, dst_tree)
 
         copy_time = time.time() - t0
 
@@ -146,4 +143,13 @@ class Converter(object):
                                                                                                                                       )
 
         return dst_tree
+
+    def _merge_fields(self, fields, dst_tree):
+        for name, values in fields.iteritems():
+            x = dst_tree[name]
+            x[:] = values
+
+    def _transfer_fields(self, src_tree, dst_tree):
+        for field, dtype in self.mapping.fields:
+            dst_tree[field] = src_tree[field]
 
