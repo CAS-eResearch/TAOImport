@@ -138,25 +138,58 @@ class SAGEConverter(tao.Converter):
         on the snapshot ordering of the input data, the GalaxyIndex field,
         and the mergeIntoID field.
         """
-
         descs = np.empty(len(tree), np.int32)
         descs.fill(-1)
-        par_map = {}
-        for ii in range(len(tree)):
-            gal_idx = tree['GalaxyIndex'][ii]
-            par = par_map.get(gal_idx, None)
-            if par is not None:
-                descs[par] = ii
-            if tree['mergeIntoID'][ii] < 0:
-                par_map[gal_idx] = ii
-            elif par is not None:
-                del par_map[gal_idx]
+
+        ### Now my attempt at this mapping descendants 
+        ### First, sort the entire tree into using GalaxyIndex as
+        ### primary key and then snapshot number as secondary key.
+        ### This sorted indices will naturally flow a galaxy from
+        ### earlier times (lower snapshot numbers) to later times (larger
+        ### snapshot number)
+        sorted_ind = np.argsort(tree, order = ('GalaxyIndex','SnapNum'))
+
+        all_gal_idx = tree['GalaxyIndex']
+
+        ### If a galaxy continues, then consecutive galaxy indices should
+        ### be identical (within the sorted galaxyindex array). That means,
+        ### a diff between neighbouring array elements should be zero. 
+        diff = all_gal_idx[sorted_ind] - np.roll(all_gal_idx[sorted_ind],-1)
+
+        ind = (np.where(diff == 0))[0]
+        if len(ind) > 0:
+            ### what happens if the last element and first element
+            ### of all_gal_idx are the same? Do we get a run-time
+            ### out-of-bounds array exception since ind+1 will be
+            ### more than len(tree)? Not sure... -> MS 20th Oct, 2015
+            ### Yes !! It does happen. Need to check for indices within
+            ### bounds --> MS 21st Oct, 2015
+            ind1 = (np.where(ind < (len(tree)-1)))[0]
+            if len(ind1) > 0:
+                ### map the descendants -> looks more complicated than it is
+                ### First, pretend that the entire tree is already sorted
+                ### --> the sorted_ind array can be removed.
+                ###
+                ### say, the sorted galaxy indices look like:
+                ### [1 1  1  2  2  3 3 3 3  3  4  4  5 5 5 5], then, shifting the array left by 1 spot (using np.roll) gives
+                ### [1 1  2  2  3  3 3 3 3  4  4  5  5 5 5 1], with the differences (in the variable diff)
+                ### [0 0 -1  0 -1  0 0 0 0 -1  0 -1  0 0 0 4]
+                ### Thus, the locations with 0 immediately give galaxies
+                ### that have descendants. And the location of the descendants
+                ### are the next array index (in the sorted array). 
+                
+                descs[sorted_ind[ind[ind1]]] = sorted_ind[ind[ind1]+1]
+
+            ### The last index in the sorted_ind array can not have a descendant
+            ### since there are no more galaxies in the future! 
+            descs[sorted_ind[-1]] = -1
+        
         return descs
 
     def map_dt(self, tree):
         """Convert SAGE dT values to Gyrs"""
 
-        return tree['dT']/1000.0
+        return tree['dT']*1e-3
 
     def iterate_trees(self):
         """Iterate over SAGE trees."""
@@ -232,12 +265,12 @@ class SAGEConverter(tao.Converter):
             n_gals = [np.fromfile(f, np.uint32, 1)[0] for f in files]
             chunk_sizes = [np.fromfile(f, np.uint32, n_trees) for f in files]
             tree_sizes = sum(chunk_sizes)
-
-            for ii in range(n_trees):
+            
+            for ii in xrange(n_trees):
                 tree_size = tree_sizes[ii]
                 tree = np.empty(tree_size, dtype=src_type)
                 offs = 0
-                for jj in range(len(chunk_sizes)):
+                for jj in xrange(len(chunk_sizes)):
                     chunk_size = chunk_sizes[jj][ii]
                     data = np.fromfile(files[jj],src_type, chunk_size)
                     tree[offs:offs + chunk_size] = data
