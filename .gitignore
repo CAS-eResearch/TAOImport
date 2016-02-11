@@ -1,6 +1,16 @@
 **~
 **.pyc
 **.swp
+*.h5
+*profile*
+*.*prof
+*.png
+timing*
+*.pro
+*.txt
+??
+*.xml
+output*
 build-*
 config.log
 config.py

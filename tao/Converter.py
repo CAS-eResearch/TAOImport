@@ -133,14 +133,14 @@ class Converter(object):
         post_conv_time = time.time() - t0
         total_time = time.time() - tstart
 
-        print "{:10.6f} {:10.6f}({:4.1f}%)  {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%)".format(total_time,
-                                                                                                                                      mod_time,mod_time/total_time*100.0,
-                                                                                                                                      val_time,val_time/total_time*100.0,
-                                                                                                                                      gen_time,gen_time/total_time*100.0,
-                                                                                                                                      iter_time,iter_time/total_time*100.0,
-                                                                                                                                      copy_time,copy_time/total_time*100.0,
-                                                                                                                                      post_conv_time,post_conv_time/total_time*100.0
-                                                                                                                                      )
+        # print "{:10.6f} {:10.6f}({:4.1f}%)  {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%)".format(total_time,
+        #                                                                                                                               mod_time,mod_time/total_time*100.0,
+        #                                                                                                                               val_time,val_time/total_time*100.0,
+        #                                                                                                                               gen_time,gen_time/total_time*100.0,
+        #                                                                                                                               iter_time,iter_time/total_time*100.0,
+        #                                                                                                                               copy_time,copy_time/total_time*100.0,
+        #                                                                                                                               post_conv_time,post_conv_time/total_time*100.0
+        #                                                                                                                               )
 
         return dst_tree
 

@@ -154,11 +154,11 @@ class DepthFirstOrdering(Generator):
                 
         validation_time = time.time() - t0
         total_time = time.time() - tstart
-        print(" {:12d} {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%)  {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%)  {:10.6f}".format(len(tree),
-                                                                                                                                        remapping_time,remapping_time/total_time*100.0,
-                                                                                                                                        sort_time,sort_time/total_time*100.0,
-                                                                                                                                        validation_time,validation_time/total_time*100.0,
-                                                                                                                                        roots_time,roots_time/total_time*100.0,
-                                                                                                                                        recurse_time,recurse_time/total_time*100.0,
-                                                                                                                                        new_recurse_time,new_recurse_time/total_time*100.0,
-                                                                                                                                        total_time, file=sys.stderr))
+        # print(" {:12d} {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%)  {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%) {:10.6f}({:4.1f}%)  {:10.6f}".format(len(tree),
+        #                                                                                                                                 remapping_time,remapping_time/total_time*100.0,
+        #                                                                                                                                 sort_time,sort_time/total_time*100.0,
+        #                                                                                                                                 validation_time,validation_time/total_time*100.0,
+        #                                                                                                                                 roots_time,roots_time/total_time*100.0,
+        #                                                                                                                                 recurse_time,recurse_time/total_time*100.0,
+        #                                                                                                                                 new_recurse_time,new_recurse_time/total_time*100.0,
+        #                                                                                                                                 total_time, file=sys.stderr))
