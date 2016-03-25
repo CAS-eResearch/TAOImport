@@ -4,6 +4,9 @@ from .library import library
 from .Exporter import Exporter
 from .Mapping import Mapping
 from .xml import get_settings_xml
+from IPython.core.debugger import Tracer
+from collections import OrderedDict
+import os
 
 class ConversionError(Exception):
     pass
@@ -13,25 +16,118 @@ class Converter(object):
     def __init__(self, modules, args):
         self.modules = modules
         self.args = args
-        self.mapping = Mapping(self, self.get_mapping_table(), self.get_extra_fields())
+        table = self.get_mapping_table()
+        fields = self.get_extra_fields()
+        self.mapping = Mapping(self, table, fields)
         self.make_datatype()
         for mod in self.modules:
             mod.mapping = self.mapping
 
+    def combine_and_append_keys(self, old_dict, new_dict):
+        # lc -> lower-case
+        lc_old_keys = [k.lower() for k in old_dict.keys()]
+        lc_new_keys = [k.lower() for k in new_dict.keys()]
+        updated_dict = old_dict
+
+        # Take the new values
+        for lc_new_key, key in zip(lc_new_keys, new_dict.keys()):
+            # if lc_new_key not in lc_old_keys:
+            #     print "adding a new key = '{0}' with val = '{1}' to dict"\
+            #         .format(key, new_dict[key])
+            # else:
+            #     print "updating key = '{0}' with val = '{1}'. Old value = '{2}' "\
+            #         .format(key, new_dict[key], updated_dict[key])
+
+            # Update the dictionary
+            updated_dict[key] = new_dict[key]
+
+        return updated_dict
+            
     def make_datatype(self):
         all_fields = []
         seen_fields = set()
+        metadata = OrderedDict()
+        import pprint
+        pp = pprint.PrettyPrinter(indent=4)
+
+        # print "BEGINNING self.mapping.fields = {0}".format(self.mapping.fields)
+        
         for mod in self.modules:
-            new_fields = mod.get_numpy_fields()
+            # print "inside converter make_dataypes - mod = {0}".format(mod)
+            new_fields, meta_field = mod.get_numpy_fields()
+
             for nf in new_fields:
-                if nf[0].lower() not in seen_fields:
+                lower_case_field = nf[0].lower()
+                if lower_case_field not in seen_fields:
                     all_fields.append(nf)
-                    seen_fields.add(nf[0].lower())
-        for mf in self.mapping.fields:
-            if mf[0].lower() not in seen_fields:
-                all_fields.append(mf)
-                seen_fields.add(mf[0].lower())
-        self.galaxy_type = np.dtype(all_fields)
+                    seen_fields.add(lower_case_field)
+                    metadata[lower_case_field] = meta_field[nf[0]]
+                    # print "nf = {0}, d = {1}".format(nf, meta_field[nf[0]])
+                else:
+                    # Update the dictionary with (possible) newer info
+                    old_d = metadata[lower_case_field]
+                    new_d = meta_field[nf[0]]
+                    # print "Calling combine keys for mod = {0} field = {1} "\
+                    #     .format(mod, nf[0])
+
+                    # print "old dict = {0}\nnew_dict = {1}".format(old_d, new_d)
+                    
+                    updated_d = self.combine_and_append_keys(old_d, new_d)
+                    metadata[lower_case_field] = updated_d
+                    
+        mapped_keys_lower = [k.lower() for k in self.mapping.table.keys()]
+        for mf, d in self.mapping.fields.iteritems():
+            lower_case_field = mf.lower()
+            assert lower_case_field not in mapped_keys_lower,\
+                "mapped field = {0} should not *also* be present in the list "\
+                "of fields to directly transfer. Please remove this field "\
+                "from either get_mapping_table() or get_extra_fields(). "\
+                .format(lower_case_field)
+            
+            if lower_case_field not in seen_fields:
+                all_fields.append((mf, d['type']))
+                seen_fields.add(lower_case_field)
+                metadata[lower_case_field] = d
+                # print "mf = {0} d = {1}".format(mf, d)
+            else:
+                # print "mf = {0} already present. Now printing d".format(mf)
+                old_d = metadata[lower_case_field]
+                print "Calling combine keys for mod = {0} field = {1} "\
+                    .format(mod, mf)
+
+                print "old dict = {0}\nnew_dict = {1}".format(old_d, d)
+
+                updated_d = self.combine_and_append_keys(old_d, d)
+                metadata[lower_case_field] = updated_d
+
+        # Now just update the dictionaries for the items in the mapping table
+        for key, val in self.mapping.table.iteritems():
+            lower_case_field = key.lower()
+            old_d = metadata[lower_case_field]
+            try:
+                new_d = self.src_fields_dict[val]
+            except KeyError:
+                try:
+                    new_d = self.src_fields_dict[val.lower()]
+                except:
+                    Tracer()()
+
+            # print "Calling combine keys for mapping table field = {0} val = {1}"\
+            #     .format(key, val)
+
+            # print "old dict = {0}\nnew_dict = {1}".format(old_d, new_d)
+            
+            updated_d = self.combine_and_append_keys(old_d, new_d)
+            metadata[lower_case_field] = updated_d
+                            
+
+        # print "all_fields = {0}".format(all_fields)
+        try:
+            self.galaxy_type = np.dtype(all_fields)
+        except:
+            Tracer()()
+
+        self.metadata = metadata
 
     def convert(self):
         sim = self.get_simulation_data()
@@ -75,9 +171,11 @@ class Converter(object):
         library['box_size'] = sim['box_size']
         library['redshifts'] = redshifts
         library['n_snapshots'] = len(redshifts)
+        library['metadata'] = self.metadata
 
-        with open('settings.xml', 'w') as file:
-            file.write(get_settings_xml(self.galaxy_type))
+        with open(os.path.dirname(self.args.output)+'/settings.xml', 'w') as f:
+            f.write(get_settings_xml(self.galaxy_type, redshifts,
+                                     self.metadata))
         
         with Exporter(self.args.output, self) as exp:
             exp.set_cosmology(sim['hubble'], sim['omega_m'], sim['omega_l'])
@@ -145,11 +243,15 @@ class Converter(object):
         return dst_tree
 
     def _merge_fields(self, fields, dst_tree):
+        # print "fields in _merge_fields = {0}".format(fields)
         for name, values in fields.iteritems():
             x = dst_tree[name]
             x[:] = values
 
     def _transfer_fields(self, src_tree, dst_tree):
-        for field, dtype in self.mapping.fields:
+        # print "fields in _transfer_fields = {0} ".format(self.mapping.fields)
+        # print "src_tree.dtype = {0}".format(src_tree.dtype)
+        # print "dst_tree.dtype = {0}".format(dst_tree.dtype)
+        for field, _ in self.mapping.fields.iteritems():
             dst_tree[field] = src_tree[field]
 

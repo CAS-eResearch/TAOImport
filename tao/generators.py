@@ -1,14 +1,21 @@
 from __future__ import print_function
+from collections import OrderedDict
 import numpy as np
 import time as time
 import sys
+from IPython.core.debugger import Tracer
 
 class Generator(object):
 
     def get_field(self, fields, name, dtype='f'):
         fld = fields.get(name, None)
+        # print("name = {0} fld = {1}".format(name, fld))
         if fld is None:
+            # print("fields.keys() = {0}".format(fields.keys()))
+            # print("fields.keys()[0] = {0}".format(fields.keys()[0]))
+            # print("fields[fields.keys()[0]] = {0}".format(fields[fields.keys()[0]]))
             size = len(fields[fields.keys()[0]])
+            # print("name = {0} size = {1}".format(name, size))
             fld = np.empty(size, dtype)
             fields[name] = fld
         return fld
@@ -21,9 +28,9 @@ class Generator(object):
 
 class GlobalIndices(Generator):
     fields = [
-        ('globalindex', np.int64),
-    ]
-
+        ('globalindex', np.int64)
+        ]
+    
     def __init__(self, *args, **kwargs):
         super(GlobalIndices, self).__init__(*args, **kwargs)
         self.index = 0
@@ -35,9 +42,9 @@ class GlobalIndices(Generator):
 
 class TreeIndices(Generator):
     fields = [
-        ('treeindex', np.int32),
-    ]
-
+        ('treeindex', np.int32)
+        ]
+    
     def __init__(self, *args, **kwargs):
         super(TreeIndices, self).__init__(*args, **kwargs)
         self.index = 0
@@ -49,23 +56,28 @@ class TreeIndices(Generator):
 
 class TreeLocalIndices(Generator):
     fields = [
-        ('localindex', np.int32),
-    ]
+        ('localindex', np.int32)
+        ]
 
     def generate_fields(self, fields):
         lidxs = self.get_field(fields, 'localindex', np.int32)
         lidxs[:] = np.arange(0,len(lidxs),1,dtype=np.int32)
+        # print("lidxs = {0} shape = {1}".format(lidxs, lidxs.shape))
+                
             
 class GlobalDescendants(Generator):
-    fields = [
-        ('globaldescendant', np.int64),
-    ]
+    fields =[
+        ('globaldescendant', np.int64)
+        ]
 
     def generate_fields(self, fields):
         gdescs = self.get_field(fields, 'globaldescendant', np.int64)
         descs = fields['descendant']
+        # print("len(gdescs) = {0} len(descs) = {1}"\
+        #           .format(len(gdescs), len(descs)))
         gidxs = fields['globalindex']
 
+        # Tracer()()
         gdescs[:] = descs
         ind = (np.where(descs != -1))[0]
         if len(ind) > 0:
@@ -73,8 +85,8 @@ class GlobalDescendants(Generator):
 
 class DepthFirstOrdering(Generator):
     fields = [
-        ('subsize', np.int32),
-    ]
+            ('subsize', np.int32)
+            ]
 
     def post_conversion(self, tree):
         tstart = time.time()

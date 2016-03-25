@@ -7,10 +7,481 @@ into HDF5 input for TAO.
 import re, os
 import numpy as np
 import tao
+from collections import OrderedDict
 
 class SAGEConverter(tao.Converter):
     """Subclasses tao.Converter to perform SAGE output conversion."""
 
+    def __init__(self, *args, **kwargs):
+        src_fields_dict = OrderedDict([
+                ('StellarMass', {
+                        'type': np.float32,
+                        'label': "Total Stellar Mass",
+                        'description': "Total stellar mass of galaxy",
+                        'units': "10^10 Msun/h",
+                        'group': "Galaxy Masses",
+                        'order': 0,
+                        }),
+                ('BulgeMass', {
+                        'type': np.float32,
+                        'label': "Bulge Stellar Mass",
+                        'description': "Stellar mass in the bulge component "\
+                            "of the galaxy",
+                        'units': '10^10 Msun/h',
+                        'group': "Galaxy Masses",                        
+                        'order': 1,
+                        }),
+                ('BlackHoleMass', {
+                        'type': np.float32,
+                        'label': "Black Hole Mass",
+                        'units': "10^10 Msun/h",
+                        'description': "Mass of the black hole",
+                        'group': "Galaxy Masses",
+                        'order': 2,
+                        }),
+                ('ColdGas', {
+                        'type': np.float32,
+                        'label': "Cold Gas Mass",
+                        'units': "10^10 Msun/h",
+                        'description': "Cold gas mass of the galaxy",
+                        'group': "Galaxy Masses",
+                        'order': 3,
+                        }),
+                ('HotGas', {
+                        'type': np.float32,
+                        'label': "Hot Gas Mass",
+                        'units': "10^10 Msun/h",
+                        'description': "Hot gas mass of the galaxy",
+                        'group': "Galaxy Masses",                        
+                        'order': 4,
+                        }),
+                ('EjectedMass', {
+                        'type': np.float32,
+                        'label': "Ejected Gas Mass",
+                        'units': "10^10 Msun/h",
+                        'description': "Mass of gas ejected from both the "\
+                            "galaxy and the halo",
+                        'group': "Galaxy Masses",
+                        'order': 5,
+                        }),
+                ('ICS', {
+                        'type': np.float32,
+                        'label': "Intracluster Stellar Mass",
+                        'units': "10^10 Msun/h",
+                        'description': "Stellar mass in the intracluster stars",
+                        'group': "Galaxy Masses",                        
+                        'order': 6,
+                        }),
+                ('MetalsStellarMass', {
+                        'type': np.float32,
+                        'label': "Total Metal Mass in Stars",
+                        'description': "Mass of metals in the galaxy stars "\
+                            "(bulge + disk)",
+                        'units': "10^10 Msun/h",
+                        'group': "Galaxy Masses",                        
+                        'order': 7,
+                        }),
+                ('MetalsBulgeMass', {
+                        'type': np.float32,
+                        'label': "Total Metal Mass in Bulge Stars",
+                        'description': "Mass of metals in the bulge stars",
+                        'units': "10^10 Msun/h",
+                        'group': "Galaxy Masses",                        
+                        'order': 8,
+                        }),
+                ('MetalsColdGas', {
+                        'type': np.float32,
+                        'label': "Total Metal Mass in Cold Gas",
+                        'description': "Mass of metals in the cold gas phase",
+                        'units': "10^10 Msun/h",
+                        'group': "Galaxy Masses",                        
+                        'order': 9,
+                        }),
+                ('MetalsHotGas', {
+                        'type': np.float32,
+                        'label': "Total Metal Mass in Hot Gas",
+                        'description': "Mass of metals in the hot gas phase",
+                        'units': "10^10 Msun/h",
+                        'group': "Galaxy Masses",                        
+                        'order': 10,
+                        }),
+                ('MetalsEjectedMass', {
+                        'type': np.float32,
+                        'label': "Total Metal Mass in Ejected Gas",
+                        'description': "Mass of metals in the gas ejected "\
+                            "from the galaxy",
+                        'units': "10^10 Msun/h",
+                        'group': "Galaxy Masses",                        
+                        'order': 11,
+                        }),
+                ('MetalsICS', {
+                        'type': np.float32,
+                        'label': "Total Metal Mass in IntraCluster Stars",
+                        'description': "Mass of metals in the intracluster "\
+                            "stars",
+                        'units': "10^10 Msun/h",
+                        'group': "Galaxy Masses",                        
+                        'order': 12,
+                        }),
+                ('ObjectType', {
+                        'type': np.int32,
+                        'label': "Galaxy Classification",
+                        'description': "Galaxy type: 0-central, 1-satellite",
+                        'group': "Galaxy Properties",
+                        'order': 13,
+                        }),
+                ('DiskScaleRadius', {
+                        'type': np.float32,
+                        'label': "Disk Scale Radius",
+                        'description': "Scale radius of the stellar disk",
+                        'group': "Galaxy Properties",
+                        'units': "Mpc/h",
+                        'order': 14,
+                        }),
+                ('SfrDisk', {
+                        'type': np.float32,
+                        'label': "Star Formation Rate in the Disk",
+                        'description': "Star formation rate in the disk",
+                        'group': "Galaxy Properties",
+                        'units': "Msun/h",
+                        'order': 15,
+                        }),
+                ('SfrBulge', {
+                        'type': np.float32,
+                        'label': "Star formation Rate in the Bulge",
+                        'description': "Star formation rate in the bulge",
+                        'group': "Galaxy Properties",
+                        'units': "Msun/h",
+                        'order': 16,
+                        }),
+                ('SfrDiskZ', {
+                        'type': np.float32,
+                        'label': "Metallicity from Star Formation in the Disk",
+                        'description': "Metallicity from star formation in "\
+                            "the disk",
+                        'group': "Galaxy Properties",
+                        'units': "Msun/h",
+                        'order': 17,
+                        }),
+                ('SfrBulgeZ', {
+                        'type': np.float32,
+                        'label': "Metallicity from Star Formation in the Bulge",
+                        'description': "Metallicity from star formation in "\
+                            "the bulge",
+                        'group': "Galaxy Properties",
+                        'units': "Msun/h",
+                        'order': 18,
+                        }),
+                ('Cooling', {
+                        'type': np.float32,
+                        'label': "Hot Halo Gas Cooling Rate",
+                        'description': "Hot halo gas cooling rate",
+                        'group': "Galaxy Properties",
+                        'units': "erg/s",
+                        'order': 19,
+                        }),
+                ('Heating', {
+                        'type': np.float32,
+                        'label': "AGN Heating Rate",
+                        'description': "AGN Heating Rate",
+                        'group': "Galaxy Properties",
+                        'units': "erg/s",
+                        'order': 20,
+                        }),
+                ('QuasarModeBHaccretionMass', {
+                        'type': np.float32,
+                        'label': "Quasar Mode Black Hole Accretion Mass",
+                        'description': "The mass accreted onto the black hole "\
+                            "in the quasar mode across the current simulation "\
+                            "time step.",
+                        'group': "Galaxy Properties",
+                        'units': "10^10 Msun/h",
+                        'order': 21,
+                        }),
+                ('TimeofLastMajorMerger', {
+                        'type': np.float32,
+                        'label': "Time of Last Major Merger",
+                        'description': "Time of last major merger",
+                        'group': "Galaxy Properties",
+                        'units': "Myr/h",
+                        'order': 22,
+                        }),
+                ('TimeofLastMinorMerger', {
+                        'type': np.float32,
+                        'label': "Time of Last Minor Merger",
+                        'description': "Time of last minor merger",
+                        'group': "Galaxy Properties",
+                        'units': "Myr/h",
+                        'order': 23,
+                        }),
+                ('OutflowRate', {
+                        'type': np.float32,
+                        'label': "Supernova Cold Gas Outflow Rate",
+                        'description': "Cold gas outflow rate from "\
+                            "supernovae",
+                        'group': "Galaxy Properties",                        
+                        'units': "Msun/yr",
+                        'order': 24,
+                        }),
+                ('Mvir', {
+                        'type': np.float32,
+                        'label': "Virial Mass",
+                        'description': "Virial mass of the (sub)halo",
+                        'group': "Halo Properties",
+                        'units': "10^10 Msun/h",
+                        'order': 25,
+                        }),
+                ('Rvir', {
+                        'type': np.float32,
+                        'label': "Virial Radius",
+                        'description': "Physical virial radius of the (sub)halo",
+                        'group': "Halo Properties",
+                        'units': "Mpc/h",
+                        'order': 26,
+                        }),
+                ('Vvir', {
+                        'type': np.float32,
+                        'label': "Virial Speed",
+                        'description': "Virial Speed of the (sub)halo",
+                        'group': "Halo Properties",
+                        'units': "km/s",
+                        'order': 27,
+                        }),
+                ('Vmax', {
+                        'type': np.float32,
+                        'label': "Vmax",
+                        'description': "Maximum circular speed of the (sub)halo",
+                        'group': "Halo Properties",
+                        'units': "km/s",
+                        'order': 28,
+                        }),
+                ('VelDisp', {
+                        'type': np.float32,
+                        'label': "Velocity Dispersion",
+                        'description': "Velocity dispersion of the (sub)halo",
+                        'group': "Halo Properties",
+                        'units': "km/s",
+                        'order': 29,
+                        }),
+                ('Spin_x', {
+                        'type': np.float32,
+                        'label': "X Spin",
+                        'description': 'X-component of specific angular '\
+                            'momentum. Defined as Spin[3] := '\
+                            ' 1/N \sum_{i=1}^{N} (r_i - rcen) \cross '\
+                            ' (v_i - vcen)' \
+                            ', where r_i is the physical position of the '\
+                            "i'th particle, rcen is the position of the "\
+                            "center of mass, v_i is the peculiar velocity"\
+                            "of the particle and vcen is the bulk velocity"\
+                            "of the halo", 
+                        'group': "Halo Properties",
+                        'units': 'Mpc * km/s',
+                        'order': 30,
+                        }),
+                ('Spin_y', {
+                        'type': np.float32,
+                        'label': "Y Spin",
+                        'description': 'Y-component of specific angular '\
+                            'momentum. Defined as Spin[3] := '\
+                            ' 1/N \sum_{i=1}^{N} (r_i - rcen) \cross '\
+                            ' (v_i - vcen)' \
+                            ', where r_i is the physical position of the '\
+                            "i'th particle, rcen is the position of the "\
+                            "center of mass, v_i is the peculiar velocity"\
+                            "of the particle and vcen is the bulk velocity"\
+                            "of the halo", 
+                        'group': "Halo Properties",
+                        'units': 'Mpc * km/s',
+                        'order': 31,
+                        }),
+                ('Spin_z', {
+                        'type': np.float32,
+                        'label': "Z Spin",
+                        'description': 'Z-component of specific angular '\
+                            'momentum. Defined as Spin[3] := '\
+                            ' 1/N \sum_{i=1}^{N} (r_i - rcen) \cross '\
+                            ' (v_i - vcen)' \
+                            ', where r_i is the physical position of the '\
+                            "i'th particle, rcen is the position of the "\
+                            "center of mass, v_i is the peculiar velocity"\
+                            "of the particle and vcen is the bulk velocity"\
+                            "of the halo", 
+                        'group': "Halo Properties",
+                        'units': 'Mpc * km/s',
+                        'order': 32,
+                        }),
+                ('Len', {
+                        'type': np.int32,
+                        'label': "Total Particles",
+                        'description': "Total number of simulation particles "\
+                            "in the dark matter halo",
+                        'group': "Halo Properties",
+                        'order': 33,
+                        }),
+                ('CentralMvir', {
+                        'type': np.float32,
+                        'label': "Central Galaxy Mvir",
+                        'description': "Virial mass of the central galaxy halo",
+                        'group': "Halo Properties",
+                        'units': "10^10 Msun/h",
+                        'order': 34,
+                        }),
+                ('infallMvir', {
+                        'type': np.float32,
+                        'label': "Subhalo Mvir at Infall",
+                        'description': "Subhalo Mvir at infall",
+                        'group': "Halo Properties",
+                        'units': "10^10 Msun/h",                        
+                        'order': 35,
+                        }),
+                ('infallVvir', {
+                        'type': np.float32,
+                        'label': "Subhalo Vvir at Infall",
+                        'description': "Subhalo Vvir at infall",
+                        'group': "Halo Properties",
+                        'units': "km/s",
+                        'order': 36,
+                        }),
+                ('infallVmax', {
+                        'type': np.float32,
+                        'label': "Subhalo Vmax at Infall",
+                        'description': "Subhalo Vmax at infall",
+                        'group': "Halo Properties",
+                        'units': "km/s",                        
+                        'order': 37,
+                        }),
+                ('Pos_x', {
+                        'type': np.float32,
+                        'label': "X",
+                        'description': "Co-moving X position of the (sub)halo",
+                        'group': "Positions & Velocities",
+                        'units': "Mpc/h",
+                        'order': 38,
+                        }),
+                ('Pos_y', {
+                        'type': np.float32,
+                        'label': "Y",
+                        'description': "Co-moving Y position of the (sub)halo",
+                        'group': "Positions & Velocities",
+                        'units': "Mpc/h",
+                        'order': 39,
+                        }),
+                ('Pos_z', {
+                        'type': np.float32,
+                        'label': "Z",
+                        'description': "Co-moving Z position of the (sub)halo",
+                        'group': "Positions & Velocities",
+                        'units': "Mpc/h",
+                        'order': 40,
+                        }),
+                ('Vel_x', {
+                        'type': np.float32,
+                        'label': "X Velocity",
+                        'description': "X component of the galaxy/halo velocity",
+                        'group': "Positions & Velocities",
+                        'units': "km/s",
+                        'order': 41,
+                        }),
+                ('Vel_y', {
+                        'type': np.float32,
+                        'label': "Y Velocity",
+                        'description': "Y component of the galaxy/halo velocity",
+                        'group': "Positions & Velocities",
+                        'units': "km/s",
+                        'order': 42,
+                        }),
+                ('Vel_z', {
+                        'type': np.float32,
+                        'label': "Z Velocity",
+                        'description': "Z component of the galaxy/halo velocity",
+                        'group': "Positions & Velocities",
+                        'units': "km/s",
+                        'order': 43,
+                        }),
+                ('SnapNum', {
+                        'type': np.int32,
+                        'label': "Snapshot Number",
+                        'description': "Snapshot number in the simulation",
+                        'group': "Simulation",
+                        'order': 44,
+                        }),
+                ('GalaxyIndex', {
+                        'type': np.int64,
+                        'label': "Galaxy ID",
+                        'description': "Unique galaxy ID that identifies "\
+                            "a galaxy (preserved across snapshots for the "\
+                            "same galaxy)",
+                        'group': "Simulation",
+                        'order': 45,
+                        }),
+                ('CentralGalaxyIndex', {
+                        'type': np.int64,
+                        'label': "Central Galaxy ID",
+                        'description': "Unique galaxy ID that identifies "\
+                            "the central galaxy ",
+                        'group': "Simulation",
+                        'order': 46,
+                        }),
+                ('SimulationFOFHaloIndex', {
+                        'type': np.int32,
+                        'label': "Simulation Halo Index",
+                        'description': "Index for the (sub)halo as identified "\
+                            "in the simulation",
+                        'group': "Simulation",
+                        'order': 47,
+                        }),
+                ('SAGEHaloIndex', {
+                        'type': np.int32,
+                        'label': "SAGE Halo Index",
+                        'description': "Halo index within the tree file",
+                        'group': "Simulation",
+                        'order': 48,
+                        }),
+                ('SAGETreeIndex', {
+                        'type': np.int32,
+                        'label': "SAGE Tree Index",
+                        'description': "The index for the simulation tree file "\
+                            "that this halo belongs to",
+                        'group': "Simulation",
+                        'order': 49,
+                        }),
+                ('mergeIntoID', {
+                        'type': np.int32,
+                        'label': "Descendant Galaxy Index",
+                        'description': "Index for the descendant galaxy "\
+                            "after a merger",
+                        'group': "Simulation",
+                        'order': 50,
+                        }),
+                ('mergeIntoSnapNum', {
+                        'type': np.int32,
+                        'label': "Descendant Snapshot",
+                        'description': "Snapshot for the descendant galaxy",
+                        'group': "Simulation",
+                        'order': 51,
+                        }),
+                ('mergeType', {
+                        'type': np.int32,
+                        'label': "Merger Type",
+                        'description': "Merger type: "\
+                            "0=none; 1=minor merger; 2=major merger; "\
+                            "3=disk instability; 4=disrupt to ICS",
+                        'group': "Simulation",
+                        'order': 52,
+                        }),
+                ('dT', {
+                        'type': np.float32,
+                        'label': "Galaxy Age",
+                        'group': "Simulation",
+                        'order': 53,
+                        }),
+                ])
+
+        self.src_fields_dict = src_fields_dict
+        super(SAGEConverter, self).__init__(*args, **kwargs)
+        
+    
     @classmethod
     def add_arguments(cls, parser):
         """Adds extra arguments required for SAGE conversion.
@@ -68,68 +539,78 @@ class SAGEConverter(tao.Converter):
     def get_mapping_table(self):
         """Returns a mapping from TAO fields to SAGE fields."""
 
-        return {
-            'posx': 'Pos_x',
-            'posy': 'Pos_y',
-            'posz': 'Pos_z',
-            'velx': 'Vel_x',
-            'vely': 'Vel_y',
-            'velz': 'Vel_z',
-            'snapnum': 'SnapNum',
-            'mergetype': 'mergeType',
-            'dt': 'dT',
-            'sfrdisk': 'SfrDisk',
-            'sfrbulge': 'SfrBulge',
-            'sfrdiskz': 'SfrDiskZ',
-            'sfrbulgez': 'SfrBulgeZ',
-            'coldgas': 'ColdGas',
-            'metalscoldgas': 'MetalsColdGas',
-            'diskscaleradius': 'DiskScaleRadius',
-        }
+        mapping = {'posx': 'Pos_x',
+                   'posy': 'Pos_y',
+                   'posz': 'Pos_z',
+                   'velx': 'Vel_x',
+                   'vely': 'Vel_y',
+                   'velz': 'Vel_z',
+                   'snapnum': 'SnapNum',
+                   'mergetype': 'mergeType',
+                   'dt': 'dT',
+                   'sfrdisk': 'SfrDisk',
+                   'sfrbulge': 'SfrBulge',
+                   'sfrdiskz': 'SfrDiskZ',
+                   'sfrbulgez': 'SfrBulgeZ',
+                   'coldgas': 'ColdGas',
+                   'metalscoldgas': 'MetalsColdGas',
+                   'diskscaleradius': 'DiskScaleRadius',
+                   }
 
+        return mapping
+        
     def get_extra_fields(self):
         """Returns a list of SAGE fields and types to include."""
-
-        return [
-            ('GalaxyIndex', np.int64),
-            ('CentralGalaxyIndex', np.int64),
-            # ('SAGEHaloIndex', np.int32),
-            # ('SAGETreeIndex', np.int32),
-            ('SimulationFOFHaloIndex', np.int32),
-            ('mergeIntoID', np.int32),
-            ('mergeIntoSnapNum', np.int32),
-            ('Spin_x', np.float32),
-            ('Spin_y', np.float32),
-            ('Spin_z', np.float32),
-            ('Len', np.int32),
-            ('Mvir', np.float32),
-            ('CentralMvir', np.float32),
-            ('Rvir', np.float32),
-            ('Vvir', np.float32),
-            ('Vmax', np.float32),
-            ('VelDisp', np.float32),
-            ('StellarMass', np.float32),
-            ('BulgeMass', np.float32),
-            ('HotGas', np.float32),
-            ('EjectedMass', np.float32),
-            ('BlackHoleMass', np.float32),
-            ('ICS', np.float32),
-            ('MetalsStellarMass', np.float32),
-            ('MetalsBulgeMass', np.float32),
-            ('MetalsHotGas', np.float32),
-            ('MetalsEjectedMass', np.float32),
-            ('MetalsICS', np.float32),
-            ('Cooling', np.float32),
-            ('Heating', np.float32),
-            ('QuasarModeBHaccretionMass', np.float32),
-            ('TimeofLastMajorMerger', np.float32),
-            ('TimeofLastMinorMerger', np.float32),
-            ('OutflowRate', np.float32),
-            ('infallMvir', np.float32),
-            ('infallVvir', np.float32),
-            ('infallVmax', np.float32),
+        wanted_field_keys = [
+            'GalaxyIndex',
+            'CentralGalaxyIndex', 
+            'SimulationFOFHaloIndex', 
+            'mergeIntoID', 
+            'mergeIntoSnapNum', 
+            'Spin_x', 
+            'Spin_y', 
+            'Spin_z', 
+            'Len', 
+            'Mvir', 
+            'CentralMvir', 
+            'Rvir', 
+            'Vvir', 
+            'Vmax', 
+            'VelDisp', 
+            'StellarMass', 
+            'BulgeMass', 
+            'HotGas', 
+            'EjectedMass', 
+            'BlackHoleMass', 
+            'ICS', 
+            'MetalsStellarMass', 
+            'MetalsBulgeMass', 
+            'MetalsHotGas', 
+            'MetalsEjectedMass', 
+            'MetalsICS', 
+            'Cooling', 
+            'Heating', 
+            'QuasarModeBHaccretionMass', 
+            'TimeofLastMajorMerger', 
+            'TimeofLastMinorMerger', 
+            'OutflowRate', 
+            'infallMvir', 
+            'infallVvir', 
+            'infallVmax', 
         ]
 
+        fields = OrderedDict()
+        for k in wanted_field_keys:
+            try:
+                fields[k] = self.src_fields_dict[k]
+            except KeyError:
+                try:
+                    fields[k] = self.src_fields_dict[k.lower()]
+                except:
+                    raise
+
+        return fields
+            
     def map_descendant(self, tree):
         """Calculate the SAGE tree structure.
 
@@ -150,42 +631,6 @@ class SAGEConverter(tao.Converter):
         sorted_ind = np.argsort(tree, order = ('GalaxyIndex','SnapNum'))
 
         all_gal_idx = tree['GalaxyIndex']
-
-        # ### If a galaxy continues, then consecutive galaxy indices should
-        # ### be identical (within the sorted galaxyindex array). That means,
-        # ### a diff between neighbouring array elements should be zero. 
-        # diff = all_gal_idx[sorted_ind] - np.roll(all_gal_idx[sorted_ind],-1)
-
-        # ind = (np.where(diff == 0))[0]
-        # if len(ind) > 0:
-        #     ### what happens if the last element and first element
-        #     ### of all_gal_idx are the same? Do we get a run-time
-        #     ### out-of-bounds array exception since ind+1 will be
-        #     ### more than len(tree)? Not sure... -> MS 20th Oct, 2015
-        #     ### Yes !! It does happen. Need to check for indices within
-        #     ### bounds --> MS 21st Oct, 2015
-        #     ind1 = (np.where(ind < (len(tree)-1)))[0]
-        #     if len(ind1) > 0:
-        #         ### map the descendants -> looks more complicated than it is
-        #         ### First, pretend that the entire tree is already sorted
-        #         ### --> the sorted_ind array can be removed.
-        #         ###
-        #         ### say, the sorted galaxy indices look like:
-        #         ### [1 1  1  2  2  3 3 3 3  3  4  4  5 5 5 5], then, shifting the array left by 1 spot (using np.roll) gives
-        #         ### [1 1  2  2  3  3 3 3 3  4  4  5  5 5 5 1], with the differences (in the variable diff)
-        #         ### [0 0 -1  0 -1  0 0 0 0 -1  0 -1  0 0 0 4]
-        #         ### Thus, the locations with 0 immediately give galaxies
-        #         ### that have descendants. And the location of the descendants
-        #         ### are the next array index (in the sorted array). 
-                
-        #         descs[sorted_ind[ind[ind1]]] = sorted_ind[ind[ind1]+1]
-
-        #     ### The last index in the sorted_ind array can not have a descendant
-        #     ### since there are no more galaxies in the future! 
-        #     descs[sorted_ind[-1]] = -1
-        
-
-
         for ii, idx in enumerate(all_gal_idx[sorted_ind]):
             jj = ii + 1
             if (jj < len(tree)) and (idx == all_gal_idx[sorted_ind[jj]]):
@@ -201,58 +646,62 @@ class SAGEConverter(tao.Converter):
     def iterate_trees(self):
         """Iterate over SAGE trees."""
 
-        src_type = np.dtype([
-            ('SnapNum', np.int32),
-            ('ObjectType', np.int32),
-            ('GalaxyIndex', np.int64),
-            ('CentralGalaxyIndex', np.int64),
-            ('SAGEHaloIndex', np.int32),
-            ('SAGETreeIndex', np.int32),
-            ('SimulationFOFHaloIndex', np.int32),
-            ('mergeType', np.int32),
-            ('mergeIntoID', np.int32),
-            ('mergeIntoSnapNum', np.int32),
-            ('dT', np.float32),
-            ('Pos_x', np.float32), ('Pos_y', np.float32), ('Pos_z', np.float32),
-            ('Vel_x', np.float32), ('Vel_y', np.float32), ('Vel_z', np.float32),
-            ('Spin_x', np.float32),
-            ('Spin_y', np.float32),
-            ('Spin_z', np.float32),
-            ('Len', np.int32),
-            ('Mvir', np.float32),
-            ('CentralMvir', np.float32),
-            ('Rvir', np.float32),
-            ('Vvir', np.float32),
-            ('Vmax', np.float32),
-            ('VelDisp', np.float32),
-            ('ColdGas', np.float32),
-            ('StellarMass', np.float32),
-            ('BulgeMass', np.float32),
-            ('HotGas', np.float32),
-            ('EjectedMass', np.float32),
-            ('BlackHoleMass', np.float32),
-            ('ICS', np.float32),
-            ('MetalsColdGas', np.float32),
-            ('MetalsStellarMass', np.float32),
-            ('MetalsBulgeMass', np.float32),
-            ('MetalsHotGas', np.float32),
-            ('MetalsEjectedMass', np.float32),
-            ('MetalsICS', np.float32),
-            ('SfrDisk', np.float32),
-            ('SfrBulge', np.float32),
-            ('SfrDiskZ', np.float32),
-            ('SfrBulgeZ', np.float32),
-            ('DiskScaleRadius', np.float32),
-            ('Cooling', np.float32),
-            ('Heating', np.float32),
-            ('QuasarModeBHaccretionMass', np.float32),
-            ('TimeofLastMajorMerger', np.float32),
-            ('TimeofLastMinorMerger', np.float32),
-            ('OutflowRate', np.float32),
-            ('infallMvir', np.float32),
-            ('infallVvir', np.float32),
-            ('infallVmax', np.float32),
-        ])
+        file_order = ['SnapNum', 
+                      'ObjectType', 
+                      'GalaxyIndex',
+                      'CentralGalaxyIndex', 
+                      'SAGEHaloIndex', 
+                      'SAGETreeIndex', 
+                      'SimulationFOFHaloIndex', 
+                      'mergeType', 
+                      'mergeIntoID', 
+                      'mergeIntoSnapNum', 
+                      'dT', 
+                      'Pos_x',  'Pos_y',  'Pos_z', 
+                      'Vel_x',  'Vel_y', 'Vel_z', 
+                      'Spin_x',  'Spin_y', 'Spin_z', 
+                      'Len', 
+                      'Mvir', 
+                      'CentralMvir', 
+                      'Rvir', 
+                      'Vvir', 
+                      'Vmax', 
+                      'VelDisp', 
+                      'ColdGas', 
+                      'StellarMass', 
+                      'BulgeMass', 
+                      'HotGas', 
+                      'EjectedMass', 
+                      'BlackHoleMass', 
+                      'ICS', 
+                      'MetalsColdGas', 
+                      'MetalsStellarMass', 
+                      'MetalsBulgeMass', 
+                      'MetalsHotGas', 
+                      'MetalsEjectedMass', 
+                      'MetalsICS', 
+                      'SfrDisk', 
+                      'SfrBulge', 
+                      'SfrDiskZ', 
+                      'SfrBulgeZ', 
+                      'DiskScaleRadius', 
+                      'Cooling', 
+                      'Heating', 
+                      'QuasarModeBHaccretionMass', 
+                      'TimeofLastMajorMerger', 
+                      'TimeofLastMinorMerger', 
+                      'OutflowRate', 
+                      'infallMvir', 
+                      'infallVvir', 
+                      'infallVmax'
+                      ]
+
+        ordered_dtype = []
+        for k in file_order:
+            field_dict = self.src_fields_dict[k]
+            ordered_dtype.append((k, field_dict['type']))
+            
+        src_type = np.dtype(ordered_dtype)
 
         entries = [e for e in os.listdir(self.args.trees_dir) if os.path.isfile(os.path.join(self.args.trees_dir, e))]
         entries = [e for e in entries if e.startswith('model_z')]

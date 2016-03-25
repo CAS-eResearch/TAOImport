@@ -37,15 +37,24 @@ class Module(object):
             return []
 
         fields = [(n, d['type']) for n, d in self.fields.iteritems()]
+        metadata = dict()
+        for n, d in self.fields.iteritems():
+            metadata[n] = d
+            
         seen_fields = set([f[0] for f in fields])
         for generator in self.generators:
             if hasattr(generator, 'fields'):
                 for field in generator.fields:
+                    # print "In generator field = {0}".format(field)
+                    # print "field[0] = {0}".format(field[0])
+                    
                     if field[0] not in seen_fields:
                         fields.append(field)
                         seen_fields.add(field[0])
+                        metadata[field[0]] = {'type': field[1],
+                                              'group': "Internal"}
 
-        return fields
+        return fields, metadata
 
     def generate_fields(self, fields):
         if self.disabled:
