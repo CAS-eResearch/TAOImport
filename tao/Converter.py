@@ -171,8 +171,19 @@ class Converter(object):
         library['box_size'] = sim['box_size']
         library['redshifts'] = redshifts
         library['n_snapshots'] = len(redshifts)
-        library['metadata'] = self.metadata
+        library['metadata']  = self.metadata
+        library['hubble'] = sim['hubble']
 
+        if not self.args.sim_name:
+            raise ConversionError('Must specify "sim-name": name for the Simulation (dark matter/hydro)')
+        library['sim-name']  = self.args.sim_name
+
+        if not self.args.model_name:
+            raise ConversionError('Must specify a "model-name": name for the SAM galaxy formation model (use simulation name for hydro)')
+
+        library['model-name'] = self.args.model_name
+
+        
         with open(os.path.dirname(self.args.output)+'/settings.xml', 'w') as f:
             f.write(get_settings_xml(self.galaxy_type, redshifts,
                                      self.metadata))

@@ -35,6 +35,9 @@ settings_tmpl = """<settings>
     </Snapshots>
   </PGDB>
   <RunningSettings>
+    <Simulation>{sim_name}</Simulation>
+    <GalaxyModel>{model_name}</GalaxyModel>
+    <hubble>{hubble}</hubble>
     <SnpshottoRedshiftMapping></SnpshottoRedshiftMapping>		
     <InputFile></InputFile>
     <SimulationBoxX>{box_size}</SimulationBoxX>
@@ -46,7 +49,7 @@ settings_tmpl = """<settings>
     <RegenerateTables>yes</RegenerateTables>
   </RunningSettings>
   <TreeTraversal>
-    <item>global_index</item>
+    <item>globalindex</item>
     <item>descendant</item>
     <item>snapshot</item>
   </TreeTraversal>
@@ -68,13 +71,25 @@ def retrieve_dict_from_metadata(name, metadata):
     return d
 
 
+def sanitize_string(field):
+    new_field = field
+    invalid_to_valid_xml = {'&':'&amp;'}
+    for k in invalid_to_valid_xml.keys():
+        v = invalid_to_valid_xml[k]
+        try:
+            if k in new_field:
+                new_field = str.replace(new_field, k, v)
+        except TypeError:
+            pass
+        
+
+    return new_field    
+
 def get_settings_xml(dtype, redshifts, metadata):
+
     fields = []
     wanted_metadata_keys  = ['label', 'description', 'order',
                                'units', 'group']
-    # import pprint
-    # pp = pprint.PrettyPrinter(indent=4)
-    # pp.pprint(metadata)
     all_orders = []
     for name, _ in dtype.descr:
         d = retrieve_dict_from_metadata(name, metadata)
@@ -125,9 +140,11 @@ def get_settings_xml(dtype, redshifts, metadata):
 
                 # print "HAD KEYERROR - passing (key, val) = {0}, {1} for name = {2}"\
                 #     .format(key, val, name)
-            
+            val = sanitize_string(val)
             this_field = '{0}\n        {1}="{2}"'.format(this_field, key, val)
-                
+
+        name = sanitize_string(name)
+            
         this_field = '{0}>{1}</Field>'.format(this_field, name)
         fields.append(this_field)
     fields = '\n'.join(fields)
@@ -139,4 +156,7 @@ def get_settings_xml(dtype, redshifts, metadata):
     snapshots = '\n'.join(snapshots)
     return settings_tmpl.format(fields=fields,
                                 redshifts=snapshots,
+                                sim_name = library['sim-name'],
+                                model_name = library['model-name'],
+                                hubble = library['hubble'],
                                 box_size=library['box_size'])

@@ -491,6 +491,8 @@ class SAGEConverter(tao.Converter):
           2. The simulation box size.
           3. The list of expansion factors (a-list).
           4. The SAGE parameters file.
+          5. The name of the simulation (dark matter/hydro).
+          6. The name of the galaxy formation model (simulation name in case of hydro)
         """
 
         parser.add_argument('--trees-dir', default='.',
@@ -498,6 +500,10 @@ class SAGEConverter(tao.Converter):
         parser.add_argument('--box-size', help='simulation box-size')
         parser.add_argument('--a-list', help='a-list file')
         parser.add_argument('--parameters', help='SAGE parameter file')
+        parser.add_argument('--sim-name', help='name of the dark matter or '\
+                                'hydro simulation')
+        parser.add_argument('--model-name', help='name of the SAM. Set to '\
+                                'simulation name for a hydro sim')
 
     def get_simulation_data(self):
         """Extract simulation data.
