@@ -142,35 +142,37 @@ class SAGEConverter(tao.Converter):
                         'type': np.float32,
                         'label': "Star Formation Rate in the Disk",
                         'description': "Star formation rate in the disk",
-                        'group': "Galaxy Properties",
-                        'units': "Msun/h",
-                        'order': 15,
+                        'group': "Internal",
+                        'units': "Msun/year",
+                        'order': -1,
                         }),
                 ('SfrBulge', {
                         'type': np.float32,
                         'label': "Star formation Rate in the Bulge",
                         'description': "Star formation rate in the bulge",
-                        'group': "Galaxy Properties",
-                        'units': "Msun/h",
-                        'order': 16,
+                        'group': "Internal",
+                        'units': "Msun/year",
+                        'order': -1,
                         }),
                 ('SfrDiskZ', {
                         'type': np.float32,
-                        'label': "Metallicity from Star Formation in the Disk",
-                        'description': "Metallicity from star formation in "\
-                            "the disk",
-                        'group': "Galaxy Properties",
-                        'units': "Msun/h",
-                        'order': 17,
+                        'label': "Avg. Metallicity of Star-forming Disk Gas",
+                        'description': "Metallicty of star forming disk gas "\
+                            "(averaged over timesteps between two snapshots)",
+                        'group': "Internal",
+                        'units': "fraction, "\
+                            "Mass of metals/(Mass of star forming disk gas)",
+                        'order': -1,
                         }),
                 ('SfrBulgeZ', {
                         'type': np.float32,
-                        'label': "Metallicity from Star Formation in the Bulge",
-                        'description': "Metallicity from star formation in "\
-                            "the bulge",
-                        'group': "Galaxy Properties",
-                        'units': "Msun/h",
-                        'order': 18,
+                        'label': "Avg. Metallicity of Star-forming Bulge Gas",
+                        'description': "Metallicty of star forming bulge gas "\
+                            "(averaged over timesteps between two snapshots)",
+                        'group': "Internal",
+                        'units': "fraction, "\
+                            "Mass of metals/(Mass of star forming bulge gas)",
+                        'order': -1,
                         }),
                 ('Cooling', {
                         'type': np.float32,
@@ -476,6 +478,15 @@ class SAGEConverter(tao.Converter):
                         'group': "Simulation",
                         'order': 53,
                         }),
+                ('TotSfr', {
+                        'type': np.float32,
+                        'label': "Total Star Formation Rate",
+                        'description': "Total star formation rate, "\
+                            "(includes both disk and bulge components)",
+                        'group': "Galaxy Properties",
+                        'units': "Msun/h per year",
+                        'order': 15,
+                        }),
                 ])
 
         self.src_fields_dict = src_fields_dict
@@ -561,6 +572,7 @@ class SAGEConverter(tao.Converter):
                    'coldgas': 'ColdGas',
                    'metalscoldgas': 'MetalsColdGas',
                    'diskscaleradius': 'DiskScaleRadius',
+                   'objecttype': 'ObjectType',
                    }
 
         return mapping
@@ -602,7 +614,8 @@ class SAGEConverter(tao.Converter):
             'OutflowRate', 
             'infallMvir', 
             'infallVvir', 
-            'infallVmax', 
+            'infallVmax',
+            'TotSfr',
         ]
 
         fields = OrderedDict()
@@ -644,9 +657,18 @@ class SAGEConverter(tao.Converter):
         
         return descs
 
+    def totsfr(self, tree):
+        """ Calculate the total star formation rate.
+
+        Just sum the disk and bulge star formation rates
+        """
+        
+        return tree['SfrDisk'] + tree['SfrBulge']
+        
+    
     def map_dt(self, tree):
         """Convert SAGE dT values to Gyrs"""
-
+        
         return tree['dT']*1e-3
 
     def iterate_trees(self):
@@ -707,8 +729,24 @@ class SAGEConverter(tao.Converter):
             field_dict = self.src_fields_dict[k]
             ordered_dtype.append((k, field_dict['type']))
             
-        src_type = np.dtype(ordered_dtype)
+        computed_fields = {'TotSfr': self.totsfr}
+        computed_field_list = []
+        for f in computed_fields:
+            if not f in field_dict.keys():
+                assert "Computed field = {0} must still be defined "\
+                    "in the module level field_dict".format(f)
 
+            computed_field_list.append((f,field_dict['type']))
+
+
+        # print("ordered_dtype = {0}".format(ordered_dtype))
+        from_file_dtype = np.dtype(ordered_dtype)
+        # print("from file type = {0}".format(from_file_dtype))
+        ordered_dtype.extend(computed_field_list)
+        src_type = np.dtype(ordered_dtype)
+        # print("src_type = {0}".format(src_type))
+
+        
         entries = [e for e in os.listdir(self.args.trees_dir) if os.path.isfile(os.path.join(self.args.trees_dir, e))]
         entries = [e for e in entries if e.startswith('model_z')]
         redshift_strings = list(set([re.match(r'model_z(\d+\.?\d*)_\d+', e).group(1) for e in entries]))
@@ -734,9 +772,13 @@ class SAGEConverter(tao.Converter):
                 offs = 0
                 for jj in xrange(len(chunk_sizes)):
                     chunk_size = chunk_sizes[jj][ii]
-                    data = np.fromfile(files[jj],src_type, chunk_size)
+                    data = np.fromfile(files[jj],from_file_dtype, chunk_size)
                     tree[offs:offs + chunk_size] = data
                     offs += chunk_size
+                    
+                for f in computed_field_list:
+                    tree[f[0]] = (f[1]) (tree)
+                
                 yield tree
 
             for file in files:

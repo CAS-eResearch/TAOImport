@@ -91,7 +91,8 @@ def get_settings_xml(dtype, redshifts, metadata):
     wanted_metadata_keys  = ['label', 'description', 'order',
                                'units', 'group']
     all_orders = []
-    for name, _ in dtype.descr:
+    all_orders_names = []
+    for name in dtype.names:
         d = retrieve_dict_from_metadata(name, metadata)
         try:
             val = d['order']
@@ -99,17 +100,37 @@ def get_settings_xml(dtype, redshifts, metadata):
                 "val = {0} is not an integer".format(val)
             
             all_orders.append(val)
+            all_orders_names.append(name)
+            
         except KeyError:
             pass     
             
-    uniq_orders =  np.unique(all_orders)
-    assert len(uniq_orders) == len(all_orders),\
+    uniq_orders =  np.unique(all_orders != -1)
+    assert len(uniq_orders) == len((np.where(all_orders != -1))[0]),\
         "Orders are not unique "\
         "orders = {0}".format(all_orders)
+
+    # Fix there are holes in the order
+    non_negative_ind = [i for i,j in enumerate(all_orders) if j >= 0]
+    valid_orders = [all_orders[i] for i in non_negative_ind]
+    valid_names  = [all_orders_names[i] for i in non_negative_ind]
+    sorted_ind = np.argsort(valid_orders)
+
+    sorted_orders = [valid_orders[i] for i in sorted_ind]
+    sorted_names  = [valid_names[i] for i in sorted_ind]
     
-    # Okay the orders are unique. Find the max and assign orders
-    # to the fields that do not already have an order.
-    order_index = np.max(all_orders) + 1
+    for new_idx, name in enumerate(sorted_names):
+        d = retrieve_dict_from_metadata(name, metadata)
+        val = d['order']
+        assert val >= 0, "Bug in tao: order should not have been -1 here"
+        
+        d['order'] = new_idx
+        # print("Name = {2} old = {0} to new = {1}".format(val, d['order'], name))
+    
+    # Okay the orders are unique and do not have holes.
+    # Find the max and assign orders to the fields that
+    # do not already have an order.
+    order_index = len(sorted_names) 
             
     for name, typ in dtype.descr:
         typ = np.dtype(typ)
@@ -125,6 +146,9 @@ def get_settings_xml(dtype, redshifts, metadata):
         for key in wanted_metadata_keys:
             try:
                 val = d[key]
+                if key == 'order' and val < 0:
+                    val = order_index
+                    order_index += 1
             except KeyError:
                 if key == 'order':
                     val = order_index

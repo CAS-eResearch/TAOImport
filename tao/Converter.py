@@ -92,10 +92,10 @@ class Converter(object):
             else:
                 # print "mf = {0} already present. Now printing d".format(mf)
                 old_d = metadata[lower_case_field]
-                print "Calling combine keys for mod = {0} field = {1} "\
-                    .format(mod, mf)
+                # print "Calling combine keys for mod = {0} field = {1} "\
+                #     .format(mod, mf)
 
-                print "old dict = {0}\nnew_dict = {1}".format(old_d, d)
+                # print "old dict = {0}\nnew_dict = {1}".format(old_d, d)
 
                 updated_d = self.combine_and_append_keys(old_d, d)
                 metadata[lower_case_field] = updated_d
