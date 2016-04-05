@@ -14,7 +14,9 @@ python setup.py install
 ```
 
 You may need to prefix the command with `sudo` if you are installing
-system-wide on a Linux machine.
+system-wide on a Linux machine. Otherwise, use `python setup.py install --user` 
+to install on a per user basis.
+
 
 ## Getting help. ##
 
@@ -99,7 +101,7 @@ Snapshot redshifts are specified by setting a list-like value to the
 `snapshot_redshifts` variable name. For example:
 
 ```python
-napshot_redshifts = [127, 94, 32, 0]
+snapshot_redshifts = [127, 94, 32, 0]
 ```
 
 ### Data Mappings ###
@@ -213,3 +215,17 @@ def iterate_trees(args):
 
 There are a few examples of control scripts provided within the `examples`
 directory.
+
+## Running the Conversion Script for SAGE 2.0 ##
+
+If you have [SAGE 2.0](https://github.com/darrencroton/sage), **and** you want to 
+import the standard fields into [TAO](http://tao.asvo.org.au/tao), then these are the steps:
+
+1. Install this repo
+2. Run this command-line from the `tao/examples` directory:
+```shell
+taoconvert -s sage.py --trees-dir=/path/to/sage/output/directory/ --parameters=/path/to/sage/parameter-file --box-size=BOXSIZE --a-list=/path/to/file/with/scales -o /path/to/output/basefilename --sim-name="SIMULATION" --model-name="SAGE 2.0"
+```
+
+
+
