@@ -484,7 +484,7 @@ class SAGEConverter(tao.Converter):
                         'description': "Total star formation rate, "\
                             "(includes both disk and bulge components)",
                         'group': "Galaxy Properties",
-                        'units': "Msun/h per year",
+                        'units': "Msun/year",
                         'order': 15,
                         }),
                 ])
