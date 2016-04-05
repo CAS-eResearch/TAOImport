@@ -227,5 +227,6 @@ import the standard fields into [TAO](http://tao.asvo.org.au/tao), then these ar
 taoconvert -s sage.py --trees-dir=/path/to/sage/output/directory/ --parameters=/path/to/sage/parameter-file --box-size=BOXSIZE --a-list=/path/to/file/with/scales -o /path/to/output/basefilename --sim-name="SIMULATION" --model-name="SAGE 2.0"
 ```
 
+Note, this assumes that the output of SAGE are stored in files called `model_z*` files. If you have altered the output filename for SAGE, then you will have to edit `sage.py` and replace `model_z` with the appropriate filebase. 
 
 
