@@ -10,6 +10,8 @@ into a format that can be easily imported into TAO.
 Please install by running the `setup.py` command:
 
 ```bash
+git clone https://github.com/CAS-eResearch/TAOImport.git
+cd TAOImport
 python setup.py install
 ```
 
