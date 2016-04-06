@@ -158,20 +158,20 @@ class SAGEConverter(tao.Converter):
                         'type': np.float32,
                         'label': "Avg. Metallicity of Star-forming Disk Gas",
                         'description': "Metallicty of star forming disk gas "\
-                            "(averaged over timesteps between two snapshots)",
+                            "(averaged over timesteps between two snapshots)"\
+                            "(Mass of metals)/(Mass of star forming disk gas)",
                         'group': "Internal",
-                        'units': "fraction, "\
-                            "Mass of metals/(Mass of star forming disk gas)",
+                        'units': "fraction",
                         'order': -1,
                         }),
                 ('SfrBulgeZ', {
                         'type': np.float32,
                         'label': "Avg. Metallicity of Star-forming Bulge Gas",
                         'description': "Metallicty of star forming bulge gas "\
-                            "(averaged over timesteps between two snapshots)",
+                            "(averaged over timesteps between two snapshots)"\
+                            "(Mass of metals)/(Mass of star forming bulge gas)",
                         'group': "Internal",
-                        'units': "fraction, "\
-                            "Mass of metals/(Mass of star forming bulge gas)",
+                        'units': "fraction",
                         'order': -1,
                         }),
                 ('Cooling', {
