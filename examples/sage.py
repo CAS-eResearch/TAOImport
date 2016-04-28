@@ -192,7 +192,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('QuasarModeBHaccretionMass', {
                         'type': np.float32,
-                        'label': "Quasar Mode Black Hole Accretion Mass",
+                        'label': "Quasar BH Accretion Mass",
                         'description': "The mass accreted onto the black hole "\
                             "in the quasar mode across the current simulation "\
                             "time step.",
