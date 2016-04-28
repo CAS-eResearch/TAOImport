@@ -411,25 +411,24 @@ class SAGEConverter(tao.Converter):
                 ('GalaxyIndex', {
                         'type': np.int64,
                         'label': "Galaxy ID",
-                        'description': "Unique galaxy ID that identifies "\
-                            "a galaxy (preserved across snapshots for the "\
-                            "same galaxy)",
+                        'description': "An unique ID that stays with the "\
+                            "galaxy/halo for its entire history",
                         'group': "Simulation",
                         'order': 45,
                         }),
                 ('CentralGalaxyIndex', {
                         'type': np.int64,
                         'label': "Central Galaxy ID",
-                        'description': "Unique galaxy ID that identifies "\
-                            "the central galaxy ",
+                        'description': "The unique Galaxy ID of the "\
+                            "central galaxy this galaxy/halo belongs to",
                         'group': "Simulation",
                         'order': 46,
                         }),
                 ('SimulationFOFHaloIndex', {
                         'type': np.int32,
                         'label': "Simulation Halo ID",
-                        'description': "Index for the (sub)halo as identified "\
-                            "in the simulation",
+                        'description': "An ID for the (sub)halo passed through"\
+                            "from the original simulation",
                         'group': "Simulation",
                         'order': 47,
                         }),
