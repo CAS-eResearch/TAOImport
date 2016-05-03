@@ -452,14 +452,14 @@ class SAGEConverter(tao.Converter):
                         'label': "Descendant Galaxy Index",
                         'description': "Index for the descendant galaxy "\
                             "after a merger",
-                        'group': "Simulation",
+                        'group': "Internal",
                         'order': 50,
                         }),
                 ('mergeIntoSnapNum', {
                         'type': np.int32,
                         'label': "Descendant Snapshot",
                         'description': "Snapshot for the descendant galaxy",
-                        'group': "Simulation",
+                        'group': "Internal",
                         'order': 51,
                         }),
                 ('mergeType', {
@@ -468,13 +468,13 @@ class SAGEConverter(tao.Converter):
                         'description': "Merger type: "\
                             "0=none; 1=minor merger; 2=major merger; "\
                             "3=disk instability; 4=disrupt to ICS",
-                        'group': "Simulation",
+                        'group': "Internal",
                         'order': 52,
                         }),
                 ('dT', {
                         'type': np.float32,
                         'label': "Galaxy Age",
-                        'group': "Simulation",
+                        'group': "Internal",
                         'order': 53,
                         }),
                 ('TotSfr', {
