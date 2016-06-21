@@ -66,7 +66,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('ICS', {
                         'type': np.float32,
-                        'label': "Intracluster Stellar Mass",
+                        'label': "Intracluster Stars Mass",
                         'units': "10^10 Msun/h",
                         'description': "Stellar mass in the intracluster stars",
                         'group': "Galaxy Masses",                        
@@ -74,7 +74,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('MetalsStellarMass', {
                         'type': np.float32,
-                        'label': "Total Metal Mass in Stars",
+                        'label': "Metals Total Stellar Mass",
                         'description': "Mass of metals in the galaxy stars "\
                             "(bulge + disk)",
                         'units': "10^10 Msun/h",
@@ -83,7 +83,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('MetalsBulgeMass', {
                         'type': np.float32,
-                        'label': "Total Metal Mass in Bulge Stars",
+                        'label': "Metals Bulge Mass",
                         'description': "Mass of metals in the bulge stars",
                         'units': "10^10 Msun/h",
                         'group': "Galaxy Masses",                        
@@ -91,7 +91,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('MetalsColdGas', {
                         'type': np.float32,
-                        'label': "Total Metal Mass in Cold Gas",
+                        'label': "Metals Cold Gas Mass",
                         'description': "Mass of metals in the cold gas phase",
                         'units': "10^10 Msun/h",
                         'group': "Galaxy Masses",                        
@@ -99,7 +99,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('MetalsHotGas', {
                         'type': np.float32,
-                        'label': "Total Metal Mass in Hot Gas",
+                        'label': "Metals  Hot Gas Mass",
                         'description': "Mass of metals in the hot gas phase",
                         'units': "10^10 Msun/h",
                         'group': "Galaxy Masses",                        
@@ -107,7 +107,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('MetalsEjectedMass', {
                         'type': np.float32,
-                        'label': "Total Metal Mass in Ejected Gas",
+                        'label': "Metals Ejected Gas Mass",
                         'description': "Mass of metals in the gas ejected "\
                             "from the galaxy",
                         'units': "10^10 Msun/h",
@@ -116,7 +116,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('MetalsICS', {
                         'type': np.float32,
-                        'label': "Total Metal Mass in IntraCluster Stars",
+                        'label': "Metals IntraCluster Stars Mass",
                         'description': "Mass of metals in the intracluster "\
                             "stars",
                         'units': "10^10 Msun/h",
@@ -176,7 +176,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('Cooling', {
                         'type': np.float32,
-                        'label': "Hot Halo Gas Cooling Rate",
+                        'label': "Hot Gas Cooling Rate",
                         'description': "Hot halo gas cooling rate",
                         'group': "Galaxy Properties",
                         'units': "erg/s",
@@ -227,7 +227,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('Mvir', {
                         'type': np.float32,
-                        'label': "Virial Mass",
+                        'label': "Mvir",
                         'description': "Virial mass of the (sub)halo",
                         'group': "Halo Properties",
                         'units': "10^10 Msun/h",
@@ -235,7 +235,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('Rvir', {
                         'type': np.float32,
-                        'label': "Virial Radius",
+                        'label': "Rvir",
                         'description': "Physical virial radius of the (sub)halo",
                         'group': "Halo Properties",
                         'units': "Mpc/h",
@@ -243,7 +243,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('Vvir', {
                         'type': np.float32,
-                        'label': "Virial Speed",
+                        'label': "Vvir",
                         'description': "Virial Speed of the (sub)halo",
                         'group': "Halo Properties",
                         'units': "km/s",
@@ -274,8 +274,8 @@ class SAGEConverter(tao.Converter):
                             ' (v_i - vcen)' \
                             ', where r_i is the physical position of the '\
                             "i'th particle, rcen is the position of the "\
-                            "center of mass, v_i is the peculiar velocity"\
-                            "of the particle and vcen is the bulk velocity"\
+                            "center of mass, v_i is the peculiar velocity "\
+                            "of the particle and vcen is the bulk velocity "\
                             "of the halo", 
                         'group': "Halo Properties",
                         'units': 'Mpc * km/s',
@@ -290,8 +290,8 @@ class SAGEConverter(tao.Converter):
                             ' (v_i - vcen)' \
                             ', where r_i is the physical position of the '\
                             "i'th particle, rcen is the position of the "\
-                            "center of mass, v_i is the peculiar velocity"\
-                            "of the particle and vcen is the bulk velocity"\
+                            "center of mass, v_i is the peculiar velocity "\
+                            "of the particle and vcen is the bulk velocity "\
                             "of the halo", 
                         'group': "Halo Properties",
                         'units': 'Mpc * km/s',
@@ -306,8 +306,8 @@ class SAGEConverter(tao.Converter):
                             ' (v_i - vcen)' \
                             ', where r_i is the physical position of the '\
                             "i'th particle, rcen is the position of the "\
-                            "center of mass, v_i is the peculiar velocity"\
-                            "of the particle and vcen is the bulk velocity"\
+                            "center of mass, v_i is the peculiar velocity "\
+                            "of the particle and vcen is the bulk velocity "\
                             "of the halo", 
                         'group': "Halo Properties",
                         'units': 'Mpc * km/s',
