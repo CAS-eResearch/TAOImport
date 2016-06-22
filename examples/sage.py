@@ -99,7 +99,7 @@ class SAGEConverter(tao.Converter):
                         }),
                 ('MetalsHotGas', {
                         'type': np.float32,
-                        'label': "Metals  Hot Gas Mass",
+                        'label': "Metals Hot Gas Mass",
                         'description': "Mass of metals in the hot gas phase",
                         'units': "10^10 Msun/h",
                         'group': "Galaxy Masses",                        
