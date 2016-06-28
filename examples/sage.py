@@ -783,9 +783,11 @@ class SAGEConverter(tao.Converter):
                 # TimeofLastMinorMerger.
                 for f in ['TimeofLastMajorMerger', 'TimeofLastMinorMerger']:
                     timeofmerger = tree[f]
-                    ind = (np.where(timeofmerger < -1.0))[0]
-                    tree[f] = -1.0
+                    ind = (np.where(timeofmerger < 0.0))[0]
+                    tree[f][ind] = -1.0
 
+
+                    
                 assert min(tree['TimeofLastMajorMerger']) >= -1.0, \
                     "TimeofLastMajorMerger should contain -1.0 to indicate "\
                     "no known last major merger"
