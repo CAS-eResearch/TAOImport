@@ -427,7 +427,7 @@ class SAGEConverter(tao.Converter):
                 ('SimulationFOFHaloIndex', {
                         'type': np.int32,
                         'label': "Simulation Halo ID",
-                        'description': "An ID for the (sub)halo passed through"\
+                        'description': "An ID for the (sub)halo passed through "\
                             "from the original simulation",
                         'group': "Simulation",
                         'order': 47,

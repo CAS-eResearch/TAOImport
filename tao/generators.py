@@ -163,6 +163,19 @@ class DepthFirstOrdering(Generator):
         if len(ind) > 0:
             diff = set(tree['descendant'][ind] - ind) 
             assert  0 not in diff,"Descendant references same object."
+
+        ind = (np.where((tree['mergeIntoID'] == -1) & (tree['descendant'] != -1)))[0]
+        if len(ind) > 0:
+            desc_ind = tree['descendant'][ind]
+            desc_galidx = tree['GalaxyIndex'][desc_ind]
+            prog_galidx = tree['GalaxyIndex'][ind]
+            assert len(prog_galidx) == len(desc_galidx),\
+                "Bug in validation scheme for galaxy index"
+            diff = np.unique(desc_galidx - prog_galidx)
+            assert  len(diff) == 1 and diff[0] == 0,\
+                "Progenitor galaxy index must equal descendant galaxyindex. "\
+                "diff = {0}".format(diff)
+            
                 
         validation_time = time.time() - t0
         total_time = time.time() - tstart
