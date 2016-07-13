@@ -1,7 +1,7 @@
 """Convert SAGE output to TAO.
 
-A control script to be used with `taoconvert` to convert SAGE output binary data
-into HDF5 input for TAO.
+A control script to be used with `taoconvert` to convert SAGE output
+binary data into HDF5 input for TAO.
 """
 
 import re, os
@@ -480,8 +480,8 @@ class SAGEConverter(tao.Converter):
                 ('TotSfr', {
                         'type': np.float32,
                         'label': "Total Star Formation Rate",
-                        'description': "Total star formation rate, "\
-                            "(includes both disk and bulge components)",
+                        'description': "Total star formation rate, "
+                        "(includes both disk and bulge components)",
                         'group': "Galaxy Properties",
                         'units': "Msun/year",
                         'order': 15,
@@ -490,8 +490,7 @@ class SAGEConverter(tao.Converter):
 
         self.src_fields_dict = src_fields_dict
         super(SAGEConverter, self).__init__(*args, **kwargs)
-        
-    
+
     @classmethod
     def add_arguments(cls, parser):
         """Adds extra arguments required for SAGE conversion.
@@ -510,10 +509,10 @@ class SAGEConverter(tao.Converter):
         parser.add_argument('--box-size', help='simulation box-size')
         parser.add_argument('--a-list', help='a-list file')
         parser.add_argument('--parameters', help='SAGE parameter file')
-        parser.add_argument('--sim-name', help='name of the dark matter or '\
-                                'hydro simulation')
-        parser.add_argument('--model-name', help='name of the SAM. Set to '\
-                                'simulation name for a hydro sim')
+        parser.add_argument('--sim-name', help='name of the dark matter or '
+                            'hydro simulation')
+        parser.add_argument('--model-name', help='name of the SAM. Set to '
+                            'simulation name for a hydro sim')
 
     def get_simulation_data(self):
         """Extract simulation data.
@@ -527,7 +526,13 @@ class SAGEConverter(tao.Converter):
         if not self.args.parameters:
             raise tao.ConversionError('Must specify a SAGE parameter file')
         par = open(self.args.parameters, 'r').read()
-        hubble = re.search(r'Hubble_h\s+(\d*\.?\d*)', par, re.I).group(1)
+        hubble = np.float32(re.search(r'Hubble_h\s+(\d*\.?\d*)',
+                                      par, re.I).group(1))
+        if hubble < 1.0:
+            hubble = hubble * 100.0
+        msg = 'Hubble parameter must be in physical units (not little h)'
+        assert hubble > 1.0, msg
+        hubble = str(hubble)
         omega_m = re.search(r'Omega\s+(\d*\.?\d*)', par, re.I).group(1)
         omega_l = re.search(r'OmegaLambda\s+(\d*\.?\d*)', par, re.I).group(1)
         return {
@@ -549,7 +554,7 @@ class SAGEConverter(tao.Converter):
         redshifts = []
         with open(self.args.a_list, 'r') as file:
             for line in file:
-                redshifts.append(1.0/float(line) - 1.0)
+                redshifts.append(1.0 / float(line) - 1.0)
         return redshifts
 
     def get_mapping_table(self):
@@ -575,44 +580,44 @@ class SAGEConverter(tao.Converter):
                    }
 
         return mapping
-        
+
     def get_extra_fields(self):
         """Returns a list of SAGE fields and types to include."""
         wanted_field_keys = [
             'GalaxyIndex',
-            'CentralGalaxyIndex', 
-            'SimulationFOFHaloIndex', 
-            'mergeIntoID', 
-            'mergeIntoSnapNum', 
-            'Spin_x', 
-            'Spin_y', 
-            'Spin_z', 
-            'Len', 
-            'Mvir', 
-            'CentralMvir', 
-            'Rvir', 
-            'Vvir', 
-            'Vmax', 
-            'VelDisp', 
-            'StellarMass', 
-            'BulgeMass', 
-            'HotGas', 
-            'EjectedMass', 
-            'BlackHoleMass', 
-            'ICS', 
-            'MetalsStellarMass', 
-            'MetalsBulgeMass', 
-            'MetalsHotGas', 
-            'MetalsEjectedMass', 
-            'MetalsICS', 
-            'Cooling', 
-            'Heating', 
-            'QuasarModeBHaccretionMass', 
-            'TimeofLastMajorMerger', 
-            'TimeofLastMinorMerger', 
-            'OutflowRate', 
-            'infallMvir', 
-            'infallVvir', 
+            'CentralGalaxyIndex',
+            'SimulationFOFHaloIndex',
+            'mergeIntoID',
+            'mergeIntoSnapNum',
+            'Spin_x',
+            'Spin_y',
+            'Spin_z',
+            'Len',
+            'Mvir',
+            'CentralMvir',
+            'Rvir',
+            'Vvir',
+            'Vmax',
+            'VelDisp',
+            'StellarMass',
+            'BulgeMass',
+            'HotGas',
+            'EjectedMass',
+            'BlackHoleMass',
+            'ICS',
+            'MetalsStellarMass',
+            'MetalsBulgeMass',
+            'MetalsHotGas',
+            'MetalsEjectedMass',
+            'MetalsICS',
+            'Cooling',
+            'Heating',
+            'QuasarModeBHaccretionMass',
+            'TimeofLastMajorMerger',
+            'TimeofLastMinorMerger',
+            'OutflowRate',
+            'infallMvir',
+            'infallVvir',
             'infallVmax',
             'TotSfr',
         ]
@@ -628,7 +633,7 @@ class SAGEConverter(tao.Converter):
                     raise
 
         return fields
-            
+
     def map_descendant(self, tree):
         """Calculate the SAGE tree structure.
 
@@ -640,20 +645,49 @@ class SAGEConverter(tao.Converter):
         descs = np.empty(len(tree), np.int32)
         descs.fill(-1)
 
-        ### Now my attempt at this mapping descendants 
-        ### First, sort the entire tree into using GalaxyIndex as
-        ### primary key and then snapshot number as secondary key.
-        ### This sorted indices will naturally flow a galaxy from
-        ### earlier times (lower snapshot numbers) to later times (larger
-        ### snapshot number)
-        sorted_ind = np.argsort(tree, order = ('GalaxyIndex','SnapNum'))
-
+        """
+        Now my attempt at this mapping descendants
+        First, sort the entire tree into using GalaxyIndex as
+        primary key and then snapshot number as secondary key.
+        This sorted indices will naturally flow a galaxy from
+        earlier times (lower snapshot numbers) to later times (larger
+        snapshot number)
+        """
+        sorted_ind = np.argsort(tree, order=('GalaxyIndex', 'SnapNum'))
         all_gal_idx = tree['GalaxyIndex']
         for ii, idx in enumerate(all_gal_idx[sorted_ind]):
             jj = ii + 1
             if (jj < len(tree)) and (idx == all_gal_idx[sorted_ind[jj]]):
+                assert descs[sorted_ind[ii]] == -1
+                assert tree['SnapNum'][sorted_ind[jj]] > \
+                    tree['SnapNum'][sorted_ind[ii]]
+                assert tree['GalaxyIndex'][sorted_ind[ii]] == \
+                    tree['GalaxyIndex'][sorted_ind[jj]]
                 descs[sorted_ind[ii]] = sorted_ind[jj]
-        
+
+        # Run validation on descendants
+        for ii, desc in enumerate(descs):
+            if desc == -1:
+                this_galidx = tree['GalaxyIndex'][ii]
+                this_snapnum = tree['SnapNum'][ii]
+
+                # No descendant -> there can not be any galaxy
+                # with the same galaxy index at a higher snapshot
+                ind = (np.where((tree['GalaxyIndex'] == this_galidx) &
+                                (tree['SnapNum'] > this_snapnum)))[0]
+                msg = "desc == -1 but real descendant = {0}\n".format(ind)
+                if len(ind) != 0:
+                    print("tree['GalaxyIndex'][{0}] = {1} at snapshot = {2} "
+                          "should be a descendant for ii = {3} with idx = {4} "
+                          "at snapshot = {5}".format(
+                            ind, tree['GalaxyIndex'][ind],
+                            tree['SnapNum'][ind], ii,
+                            this_galidx, this_snapnum))
+                assert len(ind) == 0, msg
+            else:
+                assert tree['SnapNum'][desc] > tree['SnapNum'][ii]
+                assert tree['GalaxyIndex'][desc] == tree['GalaxyIndex'][ii]
+
         return descs
 
     def totsfr(self, tree):
@@ -661,65 +695,62 @@ class SAGEConverter(tao.Converter):
 
         Just sum the disk and bulge star formation rates
         """
-        
         return tree['SfrDisk'] + tree['SfrBulge']
-
 
     def map_dt(self, tree):
         """Convert SAGE dT values to Gyrs"""
-        
-        return tree['dT']*1e-3
+        return tree['dT'] * 1e-3
 
     def iterate_trees(self):
         """Iterate over SAGE trees."""
 
-        file_order = ['SnapNum', 
-                      'ObjectType', 
+        file_order = ['SnapNum',
+                      'ObjectType',
                       'GalaxyIndex',
-                      'CentralGalaxyIndex', 
-                      'SAGEHaloIndex', 
-                      'SAGETreeIndex', 
-                      'SimulationFOFHaloIndex', 
-                      'mergeType', 
-                      'mergeIntoID', 
-                      'mergeIntoSnapNum', 
-                      'dT', 
-                      'Pos_x',  'Pos_y',  'Pos_z', 
-                      'Vel_x',  'Vel_y', 'Vel_z', 
-                      'Spin_x',  'Spin_y', 'Spin_z', 
-                      'Len', 
-                      'Mvir', 
-                      'CentralMvir', 
-                      'Rvir', 
-                      'Vvir', 
-                      'Vmax', 
-                      'VelDisp', 
-                      'ColdGas', 
-                      'StellarMass', 
-                      'BulgeMass', 
-                      'HotGas', 
-                      'EjectedMass', 
-                      'BlackHoleMass', 
-                      'ICS', 
-                      'MetalsColdGas', 
-                      'MetalsStellarMass', 
-                      'MetalsBulgeMass', 
-                      'MetalsHotGas', 
-                      'MetalsEjectedMass', 
-                      'MetalsICS', 
-                      'SfrDisk', 
-                      'SfrBulge', 
-                      'SfrDiskZ', 
-                      'SfrBulgeZ', 
-                      'DiskScaleRadius', 
-                      'Cooling', 
-                      'Heating', 
-                      'QuasarModeBHaccretionMass', 
-                      'TimeofLastMajorMerger', 
-                      'TimeofLastMinorMerger', 
-                      'OutflowRate', 
-                      'infallMvir', 
-                      'infallVvir', 
+                      'CentralGalaxyIndex',
+                      'SAGEHaloIndex',
+                      'SAGETreeIndex',
+                      'SimulationFOFHaloIndex',
+                      'mergeType',
+                      'mergeIntoID',
+                      'mergeIntoSnapNum',
+                      'dT',
+                      'Pos_x', 'Pos_y', 'Pos_z',
+                      'Vel_x', 'Vel_y', 'Vel_z',
+                      'Spin_x', 'Spin_y', 'Spin_z',
+                      'Len',
+                      'Mvir',
+                      'CentralMvir',
+                      'Rvir',
+                      'Vvir',
+                      'Vmax',
+                      'VelDisp',
+                      'ColdGas',
+                      'StellarMass',
+                      'BulgeMass',
+                      'HotGas',
+                      'EjectedMass',
+                      'BlackHoleMass',
+                      'ICS',
+                      'MetalsColdGas',
+                      'MetalsStellarMass',
+                      'MetalsBulgeMass',
+                      'MetalsHotGas',
+                      'MetalsEjectedMass',
+                      'MetalsICS',
+                      'SfrDisk',
+                      'SfrBulge',
+                      'SfrDiskZ',
+                      'SfrBulgeZ',
+                      'DiskScaleRadius',
+                      'Cooling',
+                      'Heating',
+                      'QuasarModeBHaccretionMass',
+                      'TimeofLastMajorMerger',
+                      'TimeofLastMinorMerger',
+                      'OutflowRate',
+                      'infallMvir',
+                      'infallVvir',
                       'infallVmax'
                       ]
 
@@ -727,16 +758,15 @@ class SAGEConverter(tao.Converter):
         for k in file_order:
             field_dict = self.src_fields_dict[k]
             ordered_dtype.append((k, field_dict['type']))
-            
+
         computed_fields = {'TotSfr': self.totsfr}
         computed_field_list = []
         for f in computed_fields:
-            if not f in field_dict.keys():
+            if f not in field_dict.keys():
                 assert "Computed field = {0} must still be defined "\
                     "in the module level field_dict".format(f)
 
-            computed_field_list.append((f,field_dict['type']))
-
+            computed_field_list.append((f, field_dict['type']))
 
         # print("ordered_dtype = {0}".format(ordered_dtype))
         from_file_dtype = np.dtype(ordered_dtype)
@@ -745,19 +775,21 @@ class SAGEConverter(tao.Converter):
         src_type = np.dtype(ordered_dtype)
         # print("src_type = {0}".format(src_type))
 
-        
-        entries = [e for e in os.listdir(self.args.trees_dir) if os.path.isfile(os.path.join(self.args.trees_dir, e))]
+        entries = [e for e in os.listdir(self.args.trees_dir)
+                   if os.path.isfile(os.path.join(self.args.trees_dir, e))]
         entries = [e for e in entries if e.startswith('model_z')]
-        redshift_strings = list(set([re.match(r'model_z(\d+\.?\d*)_\d+', e).group(1) for e in entries]))
-        group_strings = list(set([re.match(r'model_z\d+\.?\d*_(\d+)', e).group(1) for e in entries]))
+        redshift_strings = list(set([re.match(r'model_z(\d+\.?\d*)_\d+', e).group(1)
+                                     for e in entries]))
+        group_strings = list(set([re.match(r'model_z\d+\.?\d*_(\d+)', e).group(1)
+                                  for e in entries]))
 
-        group_strings.sort(lambda x,y: -1 if int(x) < int(y) else 1)
-        redshift_strings.sort(lambda x,y: 1 if float(x) < float(y) else -1)
+        group_strings.sort(lambda x, y: -1 if int(x) < int(y) else 1)
+        redshift_strings.sort(lambda x, y: 1 if float(x) < float(y) else -1)
 
         for group in group_strings:
             files = []
             for redshift in redshift_strings:
-                fn = 'model_z%s_%s'%(redshift, group)
+                fn = 'model_z%s_%s' % (redshift, group)
                 files.append(open(os.path.join(self.args.trees_dir, fn), 'rb'))
 
             n_trees = [np.fromfile(f, np.uint32, 1)[0] for f in files][0]
@@ -778,7 +810,6 @@ class SAGEConverter(tao.Converter):
                 for fieldname, conversion_function in computed_fields.items():
                     tree[fieldname] = conversion_function(tree)
 
-
                 # Reset the negative values for TimeofLastMajorMerger and
                 # TimeofLastMinorMerger.
                 for f in ['TimeofLastMajorMerger', 'TimeofLastMinorMerger']:
@@ -786,15 +817,13 @@ class SAGEConverter(tao.Converter):
                     ind = (np.where(timeofmerger < 0.0))[0]
                     tree[f][ind] = -1.0
 
-
-                    
                 assert min(tree['TimeofLastMajorMerger']) >= -1.0, \
                     "TimeofLastMajorMerger should contain -1.0 to indicate "\
                     "no known last major merger"
                 assert min(tree['TimeofLastMinorMerger']) >= -1.0, \
                     "TimeofLastMinorMerger should contain -1.0 to indicate "\
                     "no known last minor merger"
-                
+
                 # Validate central galaxy index (unique id, generated by sage)
                 ind = (np.where(tree['ObjectType'] == 0))[0]
                 assert np.all(tree['GalaxyIndex'][ind] ==
