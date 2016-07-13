@@ -42,7 +42,7 @@ class Converter(object):
             updated_dict[key] = new_dict[key]
 
         return updated_dict
-            
+
     def make_datatype(self):
         all_fields = []
         seen_fields = set()
@@ -51,7 +51,6 @@ class Converter(object):
         pp = pprint.PrettyPrinter(indent=4)
 
         # print "BEGINNING self.mapping.fields = {0}".format(self.mapping.fields)
-        
         for mod in self.modules:
             # print "inside converter make_dataypes - mod = {0}".format(mod)
             new_fields, meta_field = mod.get_numpy_fields()
@@ -71,10 +70,9 @@ class Converter(object):
                     #     .format(mod, nf[0])
 
                     # print "old dict = {0}\nnew_dict = {1}".format(old_d, new_d)
-                    
                     updated_d = self.combine_and_append_keys(old_d, new_d)
                     metadata[lower_case_field] = updated_d
-                    
+
         mapped_keys_lower = [k.lower() for k in self.mapping.table.keys()]
         for mf, d in self.mapping.fields.iteritems():
             lower_case_field = mf.lower()
@@ -83,7 +81,7 @@ class Converter(object):
                 "of fields to directly transfer. Please remove this field "\
                 "from either get_mapping_table() or get_extra_fields(). "\
                 .format(lower_case_field)
-            
+
             if lower_case_field not in seen_fields:
                 all_fields.append((mf, d['type']))
                 seen_fields.add(lower_case_field)
@@ -116,10 +114,8 @@ class Converter(object):
             #     .format(key, val)
 
             # print "old dict = {0}\nnew_dict = {1}".format(old_d, new_d)
-            
             updated_d = self.combine_and_append_keys(old_d, new_d)
             metadata[lower_case_field] = updated_d
-                            
 
         # print "all_fields = {0}".format(all_fields)
         try:
@@ -175,19 +171,22 @@ class Converter(object):
         library['hubble'] = sim['hubble']
 
         if not self.args.sim_name:
-            raise ConversionError('Must specify "sim-name": name for the Simulation (dark matter/hydro)')
+            msg = 'Must specify "sim-name": name for the Simulation '\
+                '(dark matter/hydro)'
+            raise ConversionError(msg)
         library['sim-name']  = self.args.sim_name
 
         if not self.args.model_name:
-            raise ConversionError('Must specify a "model-name": name for the SAM galaxy formation model (use simulation name for hydro)')
+            msg = 'Must specify a "model-name": name for the SAM galaxy '\
+                'formation model (use simulation name for hydro)'
+            raise ConversionError(msg)
 
         library['model-name'] = self.args.model_name
 
-        
-        with open(os.path.dirname(self.args.output)+'/settings.xml', 'w') as f:
+        outfilename = os.path.dirname(self.args.output) + '/settings.xml'
+        with open(outfilename, 'w') as f:
             f.write(get_settings_xml(self.galaxy_type, redshifts,
                                      self.metadata))
-        
         with Exporter(self.args.output, self) as exp:
             exp.set_cosmology(sim['hubble'], sim['omega_m'], sim['omega_l'])
             exp.set_box_size(sim['box_size'])
@@ -197,14 +196,15 @@ class Converter(object):
 
     def convert_tree(self, src_tree):
         tstart = time.time()
-        dst_tree = np.empty_like(src_tree, dtype = self.galaxy_type)
+        dst_tree = np.empty_like(src_tree,
+                                 dtype=self.galaxy_type)
         t0 = time.time()
         # Do conversion first.
         fields = {}
         for mod in self.modules:
             mod.convert_tree(src_tree, fields)
 
-        mod_time = time.time() - t0    
+        mod_time = time.time() - t0
 
         t0 = time.time()
         # Next check for any issues.
@@ -213,21 +213,18 @@ class Converter(object):
 
         val_time = time.time() - t0
 
-        
         t0 = time.time()
         # Now perform generation.
         for mod in self.modules:
             mod.generate_fields(fields)
 
         gen_time = time.time() - t0
-            
         t0 = time.time()
         # Now we can merge the fields into the tree.
         self._merge_fields(fields, dst_tree)
+        # iter_time=time.time() - t0
 
-        iter_time=time.time() - t0
-
-        t0 = time.time() 
+        # t0 = time.time()
         # Perform a direct transfer of fields from within the
         # mapping that are flagged.
         self._transfer_fields(src_tree, dst_tree)
@@ -238,7 +235,7 @@ class Converter(object):
         # Now run any post conversion routines.
         for mod in self.modules:
             mod.post_conversion(dst_tree)
-            
+
         post_conv_time = time.time() - t0
         total_time = time.time() - tstart
 
@@ -265,4 +262,3 @@ class Converter(object):
         # print "dst_tree.dtype = {0}".format(dst_tree.dtype)
         for field, _ in self.mapping.fields.iteritems():
             dst_tree[field] = src_tree[field]
-

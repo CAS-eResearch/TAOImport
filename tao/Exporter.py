@@ -1,7 +1,10 @@
-import h5py, logging, numpy as np
+import h5py
+import logging
+import numpy as np
 from LightCone import LightCone
 
 logger = logging.getLogger(__name__)
+
 
 class Exporter(object):
 
@@ -13,12 +16,12 @@ class Exporter(object):
     def open_file(self, filename):
         self.file = h5py.File(filename, 'w')
         self.tree_counts = self.file.create_dataset(
-            'tree_counts', (0,), dtype='i',
+            'tree_counts', (0,), dtype='uint32',
             chunks=(self.chunk_size,),
             maxshape=(None,)
         )
         self.tree_displs = self.file.create_dataset(
-            'tree_displs', (1,), dtype='i',
+            'tree_displs', (1,), dtype='uint64',
             chunks=(self.chunk_size,),
             maxshape=(None,)
         )
@@ -34,10 +37,13 @@ class Exporter(object):
             maxshape=(None,)
         )
         self.cosmology = self.file.create_group('cosmology')
-        self.box_size = self.cosmology.create_dataset('box_size', (1,), dtype='f')
+        self.box_size = self.cosmology.create_dataset('box_size',
+                                                      (1,), dtype='f')
         self.hubble = self.cosmology.create_dataset('hubble', (1,), dtype='f')
-        self.omega_m = self.cosmology.create_dataset('omega_m', (1,), dtype='f')
-        self.omega_l = self.cosmology.create_dataset('omega_l', (1,), dtype='f')
+        self.omega_m = self.cosmology.create_dataset('omega_m', (1,),
+                                                     dtype='f')
+        self.omega_l = self.cosmology.create_dataset('omega_l', (1,),
+                                                     dtype='f')
 
     def __enter__(self):
         return self
@@ -46,7 +52,7 @@ class Exporter(object):
         self.file.close()
 
     def add_tree(self, tree):
-        cnt = len(tree)
+        cnt = np.uint32(len(tree))
         displ = self.tree_displs[-1]
         self.tree_counts.resize((self.tree_counts.shape[0] + 1,))
         self.tree_displs.resize((self.tree_displs.shape[0] + 1,))
