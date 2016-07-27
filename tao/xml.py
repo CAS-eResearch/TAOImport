@@ -136,6 +136,8 @@ def get_settings_xml(dtype, redshifts, metadata):
         typ = np.dtype(typ)
         if typ in [np.int32, np.uint32]:
             typ = 'int'
+        elif typ in [np.int16, np.uint16]:
+            typ = 'short'
         elif typ in [np.int64, np.uint64]:
             typ = 'long long'
         else:

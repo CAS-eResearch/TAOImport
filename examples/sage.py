@@ -124,7 +124,7 @@ class SAGEConverter(tao.Converter):
                         'order': 12,
                         }),
                 ('ObjectType', {
-                        'type': np.int32,
+                        'type': np.int16,
                         'label': "Galaxy Classification",
                         'description': "Galaxy type: 0-central, 1-satellite",
                         'group': "Galaxy Properties",
@@ -424,8 +424,8 @@ class SAGEConverter(tao.Converter):
                         'group': "Simulation",
                         'order': 46,
                         }),
-                ('SimulationFOFHaloIndex', {
-                        'type': np.int32,
+                ('SimulationHaloIndex', {
+                        'type': np.int64,
                         'label': "Simulation Halo ID",
                         'description': "An ID for the (sub)halo passed through "\
                             "from the original simulation",
@@ -485,6 +485,23 @@ class SAGEConverter(tao.Converter):
                         'group': "Galaxy Properties",
                         'units': "Msun/year",
                         'order': 15,
+                        }),
+                ('Vpeak', {
+                        'type': np.float32,
+                        'label': "Maximum circular velocity of the halo",
+                        'description': "Maximum circular velocity attained "
+                        "in the assembly history (susceptible to spikes "
+                        "during mergers, see Vrelax for a better property)",
+                        'group': "Halo Properties",
+                        'units': "km/s",
+                        'order': 59,
+                        }),
+                ('isFlyby', {
+                        'type': np.int16,
+                        'label': "Flyby Flag",
+                        'description': "1-is a flyby halo, 0-normal halo",
+                        'group': "Halo Properties",
+                        'order': 60,
                         }),
                 ])
 
@@ -586,7 +603,7 @@ class SAGEConverter(tao.Converter):
         wanted_field_keys = [
             'GalaxyIndex',
             'CentralGalaxyIndex',
-            'SimulationFOFHaloIndex',
+            'SimulationHaloIndex',
             'mergeIntoID',
             'mergeIntoSnapNum',
             'Spin_x',
@@ -620,6 +637,8 @@ class SAGEConverter(tao.Converter):
             'infallVvir',
             'infallVmax',
             'TotSfr',
+            'Vpeak',
+            'isFlyby',
         ]
 
         fields = OrderedDict()
@@ -659,36 +678,62 @@ class SAGEConverter(tao.Converter):
             jj = ii + 1
             if (jj < len(tree)) and (idx == all_gal_idx[sorted_ind[jj]]):
                 assert descs[sorted_ind[ii]] == -1
-                assert tree['SnapNum'][sorted_ind[jj]] > \
-                    tree['SnapNum'][sorted_ind[ii]]
-                assert tree['GalaxyIndex'][sorted_ind[ii]] == \
-                    tree['GalaxyIndex'][sorted_ind[jj]]
+                # assert tree['SnapNum'][sorted_ind[jj]] > \
+                #     tree['SnapNum'][sorted_ind[ii]]
+                # assert tree['GalaxyIndex'][sorted_ind[ii]] == \
+                #     tree['GalaxyIndex'][sorted_ind[jj]]
                 descs[sorted_ind[ii]] = sorted_ind[jj]
 
         # Run validation on descendants
-        for ii, desc in enumerate(descs):
-            if desc == -1:
-                this_galidx = tree['GalaxyIndex'][ii]
-                this_snapnum = tree['SnapNum'][ii]
+        # for ii, desc in enumerate(descs):
+        #     if desc == -1:
+        #         this_galidx = tree['GalaxyIndex'][ii]
+        #         this_snapnum = tree['SnapNum'][ii]
 
-                # No descendant -> there can not be any galaxy
-                # with the same galaxy index at a higher snapshot
-                ind = (np.where((tree['GalaxyIndex'] == this_galidx) &
-                                (tree['SnapNum'] > this_snapnum)))[0]
-                msg = "desc == -1 but real descendant = {0}\n".format(ind)
-                if len(ind) != 0:
-                    print("tree['GalaxyIndex'][{0}] = {1} at snapshot = {2} "
-                          "should be a descendant for ii = {3} with idx = {4} "
-                          "at snapshot = {5}".format(
-                            ind, tree['GalaxyIndex'][ind],
-                            tree['SnapNum'][ind], ii,
-                            this_galidx, this_snapnum))
-                assert len(ind) == 0, msg
-            else:
-                assert tree['SnapNum'][desc] > tree['SnapNum'][ii]
-                assert tree['GalaxyIndex'][desc] == tree['GalaxyIndex'][ii]
+        #         # No descendant -> there can not be any galaxy
+        #         # with the same galaxy index at a higher snapshot
+        #         ind = (np.where((tree['GalaxyIndex'] == this_galidx) &
+        #                         (tree['SnapNum'] > this_snapnum)))[0]
+        #         msg = "desc == -1 but real descendant = {0}\n".format(ind)
+        #         if len(ind) != 0:
+        #             print("tree['GalaxyIndex'][{0}] = {1} at snapshot = {2} "
+        #                   "should be a descendant for ii = {3} with idx = {4} "
+        #                   "at snapshot = {5}".format(
+        #                     ind, tree['GalaxyIndex'][ind],
+        #                     tree['SnapNum'][ind], ii,
+        #                     this_galidx, this_snapnum))
+        #         assert len(ind) == 0, msg
+        #     else:
+        #         assert tree['SnapNum'][desc] > tree['SnapNum'][ii]
+        #         assert tree['GalaxyIndex'][desc] == tree['GalaxyIndex'][ii]
 
         return descs
+
+    def Vpeak(self, tree):
+        """
+        Calculates the max. of Vmax during the halo history
+        """
+        vpeak = np.empty(len(tree), np.float32)
+
+        # By pre-filling vpeak with Vmax, I don't have to
+        # worry about cases where there are no descendants
+        # (although the code should cover that case)
+        vpeak[:] = tree['Vmax']
+
+        sorted_ind = np.argsort(tree, order=('GalaxyIndex', 'SnapNum'))
+        all_vmax = tree['Vmax']
+        all_gal_idx = tree['GalaxyIndex']
+        vmax = []
+        curr_idx = all_gal_idx[sorted_ind[0]]
+        for ii, idx in enumerate(all_gal_idx[sorted_ind]):
+            if curr_idx != idx:
+                vmax = []
+                curr_idx = idx
+
+            vmax.append(all_vmax[sorted_ind[ii]])
+            vpeak[sorted_ind[ii]] = max(vmax)
+
+        return vpeak
 
     def totsfr(self, tree):
         """ Calculate the total star formation rate.
@@ -706,11 +751,12 @@ class SAGEConverter(tao.Converter):
 
         file_order = ['SnapNum',
                       'ObjectType',
+                      'isFlyby',
                       'GalaxyIndex',
                       'CentralGalaxyIndex',
                       'SAGEHaloIndex',
                       'SAGETreeIndex',
-                      'SimulationFOFHaloIndex',
+                      'SimulationHaloIndex',
                       'mergeType',
                       'mergeIntoID',
                       'mergeIntoSnapNum',
@@ -759,7 +805,7 @@ class SAGEConverter(tao.Converter):
             field_dict = self.src_fields_dict[k]
             ordered_dtype.append((k, field_dict['type']))
 
-        computed_fields = {'TotSfr': self.totsfr}
+        computed_fields = {'TotSfr': self.totsfr, 'Vpeak': self.Vpeak}
         computed_field_list = []
         for f in computed_fields:
             if f not in field_dict.keys():
@@ -769,8 +815,10 @@ class SAGEConverter(tao.Converter):
             computed_field_list.append((f, field_dict['type']))
 
         # print("ordered_dtype = {0}".format(ordered_dtype))
-        from_file_dtype = np.dtype(ordered_dtype)
-        # print("from file type = {0}".format(from_file_dtype))
+        from_file_dtype = np.dtype(ordered_dtype, align=True)
+        print("from file type = {0}".format(from_file_dtype))
+        print("sizeof(file_dtype) = {0}".format(from_file_dtype.itemsize))
+        assert from_file_dtype.itemsize == 232, "Size of datatypes do not match"
         ordered_dtype.extend(computed_field_list)
         src_type = np.dtype(ordered_dtype)
         # print("src_type = {0}".format(src_type))

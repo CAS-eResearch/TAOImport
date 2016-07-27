@@ -9,7 +9,7 @@ class LightCone(Module):
         ('objecttype', {
             'description': 'Type of galaxy',
             'choices': [0, 1, 2],
-            'type': np.int32,
+            'type': np.int16,
             'group': "Galaxy Properties",
         }),
         ('posx', {
