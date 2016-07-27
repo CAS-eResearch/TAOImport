@@ -8,6 +8,7 @@ import re, os
 import numpy as np
 import tao
 from collections import OrderedDict
+import progressbar
 
 class SAGEConverter(tao.Converter):
     """Subclasses tao.Converter to perform SAGE output conversion."""
@@ -816,8 +817,8 @@ class SAGEConverter(tao.Converter):
 
         # print("ordered_dtype = {0}".format(ordered_dtype))
         from_file_dtype = np.dtype(ordered_dtype, align=True)
-        print("from file type = {0}".format(from_file_dtype))
-        print("sizeof(file_dtype) = {0}".format(from_file_dtype.itemsize))
+        # print("from file type = {0}".format(from_file_dtype))
+        # print("sizeof(file_dtype) = {0}".format(from_file_dtype.itemsize))
         assert from_file_dtype.itemsize == 232, "Size of datatypes do not match"
         ordered_dtype.extend(computed_field_list)
         src_type = np.dtype(ordered_dtype)
@@ -833,6 +834,17 @@ class SAGEConverter(tao.Converter):
 
         group_strings.sort(lambda x, y: -1 if int(x) < int(y) else 1)
         redshift_strings.sort(lambda x, y: 1 if float(x) < float(y) else -1)
+
+        totntrees = 0L
+        for group in group_strings:
+            for redshift in redshift_strings:
+                fn = 'model_z%s_%s' % (redshift, group)
+                with open(os.path.join(self.args.trees_dir, fn), 'rb') as f:
+                    n_trees = np.fromfile(f, np.uint32, 1)[0]
+                    totntrees += n_trees
+
+        numtrees_processed = 0
+        bar = progressbar.ProgressBar(max_value=totntrees)
 
         for group in group_strings:
             files = []
@@ -877,6 +889,10 @@ class SAGEConverter(tao.Converter):
                 assert np.all(tree['GalaxyIndex'][ind] ==
                               tree['CentralGalaxyIndex'][ind]), \
                     "Central Galaxy Index must equal Galaxy Index for centrals"
+                              
+                numtrees_processed += 1
+                bar.update(numtrees_processed)
+                
                 yield tree
 
             for file in files:

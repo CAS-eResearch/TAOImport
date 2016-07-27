@@ -26,6 +26,6 @@ setup(
     packages=find_packages(),
     scripts=['tao/scripts/taoconvert'],
     include_package_data=True,
-    install_requires=['setuptools'],
+    install_requires=['setuptools','progressbar2'],
     zip_safe=False,
 )
