@@ -572,7 +572,8 @@ class SAGEConverter(tao.Converter):
         redshifts = []
         with open(self.args.a_list, 'r') as file:
             for line in file:
-                redshifts.append(1.0 / float(line) - 1.0)
+                if not line.strip():
+                    redshifts.append(1.0 / float(line) - 1.0)
         return redshifts
 
     def get_mapping_table(self):
