@@ -10,7 +10,7 @@ import tao
 from collections import OrderedDict
 import progressbar
 
-class SAGEConverter(tao.Converter):
+class SAGEConverter_MultiDark(tao.Converter):
     """Subclasses tao.Converter to perform SAGE output conversion."""
 
     def __init__(self, *args, **kwargs):
@@ -508,7 +508,7 @@ class SAGEConverter(tao.Converter):
                 ])
 
         self.src_fields_dict = src_fields_dict
-        super(SAGEConverter, self).__init__(*args, **kwargs)
+        super(SAGEConverter_MultiDark, self).__init__(*args, **kwargs)
 
     @classmethod
     def add_arguments(cls, parser):
