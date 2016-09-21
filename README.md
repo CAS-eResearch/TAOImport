@@ -19,6 +19,21 @@ You may need to prefix the command with `sudo` if you are installing
 system-wide on a Linux machine. Otherwise, use `python setup.py install --user` 
 to install on a per user basis.
 
+## Preparing your input data ##
+
+For the Spectral Energy Distribution (SED) of galaxies to be calculated correctly
+within TAO, the following properties must be provided:
+* Decomposition of Star Formation Rate into Bulge and Disk (in terms of input fields `sfrdisk` and `sfrbulge`)
+* Decomposition of Merger Types into these 4 choices:
+  - 0 -> None
+  - 1 -> Major Merger
+  - 2 -> Minor Merger
+  - 3 -> Disk Instability
+  - 4 -> Disrupt to ICS
+* Snapshot at which merger occurs
+* The primary galaxy into with the merger occurs (i.e., the index of galaxy that survives after the merger)
+ 
+For a merging secondary galaxy, all these properties *must* be recorded at the last output of the secondary galaxy.
 
 ## Getting help. ##
 
