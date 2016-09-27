@@ -170,7 +170,7 @@ def get_settings_xml(dtype, redshifts, metadata):
             this_field = '{0}\n        {1}="{2}"'.format(this_field, key, val)
 
         name = sanitize_string(name)
-            
+
         this_field = '{0}>{1}</Field>'.format(this_field, name)
         fields.append(this_field)
     fields = '\n'.join(fields)

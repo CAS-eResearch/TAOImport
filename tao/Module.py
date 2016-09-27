@@ -40,7 +40,7 @@ class Module(object):
         metadata = dict()
         for n, d in self.fields.iteritems():
             metadata[n] = d
-            
+
         seen_fields = set([f[0] for f in fields])
         for generator in self.generators:
             if hasattr(generator, 'fields'):

@@ -35,7 +35,7 @@ if __name__ == '__main__':
     launch_dir = os.getcwd()
     script = os.path.join(launch_dir, script_fn)
 
-    # If the script exists we need to run it before parsing arguments,
+    # If the script exists we need to import it before parsing arguments,
     # or even bailing due to it being missing.
     if os.path.exists(script):
         script_mod = imp.load_source('name', script)

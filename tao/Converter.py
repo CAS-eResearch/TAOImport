@@ -4,7 +4,7 @@ from .library import library
 from .Exporter import Exporter
 from .Mapping import Mapping
 from .xml import get_settings_xml
-from IPython.core.debugger import Tracer
+# from IPython.core.debugger import Tracer
 from collections import OrderedDict
 import os
 
@@ -53,6 +53,9 @@ class Converter(object):
         # print "BEGINNING self.mapping.fields = {0}".format(self.mapping.fields)
         for mod in self.modules:
             # print "inside converter make_dataypes - mod = {0}".format(mod)
+            if mod.disabled:
+                continue
+            
             new_fields, meta_field = mod.get_numpy_fields()
 
             for nf in new_fields:
