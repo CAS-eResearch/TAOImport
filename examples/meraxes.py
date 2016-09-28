@@ -918,6 +918,11 @@ class MERAXESConverter(tao.Converter):
             for icore in xrange(ncores):
                 n_trees_this_core = ntrees[icore]
                 tree_sizes = np.empty(n_trees_this_core, dtype=np.int64)
+
+                fin_galaxies_per_snap = dict()
+                for snap in snaps:
+                    fin_galaxies_per_snap[snap] = fin['Snap{0:03d}/Core{1:d}/Galaxies'.
+                                                      format(snap, icore)]
                 
                 snap_tree_offsets = np.zeros(max(snaps) + 1, dtype=np.int64)
                 for itree in xrange(n_trees_this_core):
@@ -967,14 +972,12 @@ class MERAXESConverter(tao.Converter):
                         
                         # print("Reading from 'Snap{0:03d}/Core{1:d}/Galaxies' chunk_size = {2}".
                         #       format(snap, icore, chunk_size))
+                        galaxies = fin_galaxies_per_snap[snap]
                         start_offset = tree_start_offsets[itree]
-                        galaxies = fin['Snap{0:03d}/Core{1:d}/Galaxies'.
-                                       format(snap, icore)]
                         source_sel = np.s_[start_offset: start_offset + chunk_size]
                         dest_sel = np.s_[offs:offs + chunk_size]
                         gal_data = np.empty(chunk_size, file_dtype)
-                        galaxies.read_direct(gal_data,
-                                             source_sel=source_sel)
+                        galaxies.read_direct(gal_data, source_sel=source_sel)
 
                         tree[dest_sel] = gal_data
                         tree[dest_sel]['snapnum'] = snap
