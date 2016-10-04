@@ -566,7 +566,6 @@ class MERAXESConverter(tao.Converter):
 
         return False
 
-    @profile
     def get_ntrees(self):
         r"""
         Returns a python dictionary containing the number of trees
@@ -723,7 +722,6 @@ class MERAXESConverter(tao.Converter):
                                                     zip(file_fids, offsets)])
                         tree_offsets[snap] = dict_offsets
                         
-        print("last_snap_forestids = {0}".format(last_snap_forestids))
         return last_snap_forestids, tree_counts, tree_offsets, tree_first_snap
 
     
@@ -1036,16 +1034,14 @@ class MERAXESConverter(tao.Converter):
         with h5py.File(sim_file, "r") as fin:
             for icore in range(ncores):
                 ntrees_this_core = ntrees[icore]
+                print("Working on {0} trees on core = {1}".format(
+                        ntrees_this_core, icore))
                 fin_galaxies_per_snap = dict()
                 for snap in snaps:
                     fin_galaxies_per_snap[snap] = fin['Snap{0:03d}/Core{1:d}/Galaxies'.
                                                       format(snap, icore)]
 
                 tree_fids, tree_counts, tree_offsets, tree_first_snap = self.get_tree_counts_and_offsets(icore)
-                # print("tree_fids = {0}".format(tree_fids))
-                # print("tree_counts = {0}".format(tree_counts))
-                # print("tree_offsets = {0}".format(tree_offsets))
-                # print("tree_first_snap = {0}".format(tree_first_snap))
                 vertical_tree_sizes = dict()
                 vertical_tree_offsets = dict()
                 tree_ngalaxies = dict()
@@ -1053,7 +1049,7 @@ class MERAXESConverter(tao.Converter):
                     ngalaxies = np.zeros(max(snaps) + 1, dtype=np.int64)
                     offsets = np.zeros(max(snaps) + 1, dtype=np.int64)
                     first_snap = tree_first_snap[forest]
-                    good_snaps = np.arange(first_snap, snaps[0])
+                    good_snaps = np.arange(first_snap, snaps[0] + 1)
                     for snap in good_snaps:
                         this_snap_counts = tree_counts[snap]
                         this_snap_offsets = tree_offsets[snap]
@@ -1067,6 +1063,12 @@ class MERAXESConverter(tao.Converter):
                             raise
                     
                     vertical_tree_sizes[forest] = ngalaxies.sum()
+                    if vertical_tree_sizes[forest] == 0:
+                        msg = "Number of galaxies in tree = {0} is 0. Bug in "\
+                            "code".format(vertical_tree_sizes[forest])
+                        print(msg)
+                        Tracer()()
+                        
                     vertical_tree_offsets[forest] = offsets
                     tree_ngalaxies[forest] = ngalaxies
 
@@ -1082,7 +1084,7 @@ class MERAXESConverter(tao.Converter):
                     
                     offs = 0
                     first_snap = tree_first_snap[forest]
-                    good_snaps = np.arange(first_snap, snaps[0])
+                    good_snaps = np.arange(first_snap, snaps[0]+1)
                     for snap in good_snaps:
 
                         ngalaxies_this_snap = (tree_ngalaxies[forest])[snap]
@@ -1131,7 +1133,7 @@ class MERAXESConverter(tao.Converter):
                                             this_centrals)
                                     
                                 raise ValueError(msg)
-
+                            
                         offs += ngalaxies_this_snap
                         if offs > tree_size:
                             msg = 'For tree = {0}, the start offset can at most be '\
@@ -1156,6 +1158,10 @@ class MERAXESConverter(tao.Converter):
                             'max(forestID) = {1}'.format(min_forestid,
                                                          max_forestid)
                         raise AssertionError(msg)
+                    
+                    # Fix NAN's in MWMSA (mass-weighted mean stellar age)
+                    nan_ind = np.isnan(tree['MWMSA'])
+                    tree['MWMSA'][nan_ind] = 0.0
                             
                     # One tree has been completely loaded (vertical tree now)
                     for fieldname, conv_func in computed_fields.items():
