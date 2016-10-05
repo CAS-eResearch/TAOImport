@@ -987,7 +987,7 @@ class MERAXESConverter(tao.Converter):
 
         Assume *NO* SF occurs in bulges
         """
-        return np.zeros(len(tree))
+        return np.zeros(len(tree), dtype=np.float32)
 
     def sfrdiskz(self, tree):
         """
@@ -1003,7 +1003,7 @@ class MERAXESConverter(tao.Converter):
         sub-steps within MERAXES
         """
 
-        return np.zeros(len(tree))
+        return np.zeros(len(tree), dtype=np.float32)
 
     @profile
     def iterate_trees(self):
@@ -1072,7 +1072,7 @@ class MERAXESConverter(tao.Converter):
 
                 tree_fids, tree_counts, tree_offsets, tree_first_snap = self.get_tree_counts_and_offsets(icore)
                 ngalaxies_per_snap = self.get_ngalaxies_per_snap(icore)
-                converted_ngalaxies_per_snap = np.zeros(max(snaps) + 1)
+                converted_ngalaxies_per_snap = np.zeros(max(snaps) + 1, dtype=np.int64)
                 vertical_tree_sizes = dict()
                 vertical_tree_offsets = dict()
                 tree_ngalaxies = dict()
@@ -1240,6 +1240,7 @@ class MERAXESConverter(tao.Converter):
 
                 # Now validate that *ALL* galaxies on this core
                 # were transferred
+                print("ngalaxies_per_snap = {0}\n".format(ngalaxies_per_snap))
                 if not bool(np.all(ngalaxies_per_snap ==
                                    converted_ngalaxies_per_snap)):
                     msg = "Error: Did not convert *all* galaxies for core "\
