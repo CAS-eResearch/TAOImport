@@ -1200,7 +1200,7 @@ class MERAXESConverter(tao.Converter):
                     # Validate that only one forest has been loaded.
                     min_forestid = min(tree['ForestID'])
                     max_forestid = max(tree['ForestID'])
-                    if min_forestid != max_forestid or min_forestid != forest:
+                    if min_forestid != max_forestid or min_forestid ne forest:
                         msg = 'Error during loading a single forest as a '\
                             'vertical tree. Expected to find one single '\
                             'forestID. Instead min(forestID) = {0} and '\
