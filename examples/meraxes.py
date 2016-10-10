@@ -455,6 +455,50 @@ class MERAXESConverter(tao.Converter):
                         'units': "km/s",
                         'order': 37,
                         }),
+                ('mergeIntoID', {
+                        'type': np.int32,
+                        'label': "Descendant Galaxy Index",
+                        'description': "Index for the descendant galaxy "\
+                            "after a merger",
+                        'group': "Internal",
+                        'order': 38,
+                        }),
+                ('mergeIntoSnapNum', {
+                        'type': np.int32,
+                        'label': "Descendant Snapshot",
+                        'description': "Snapshot for the descendant galaxy",
+                        'group': "Internal",
+                        'order': 39,
+                        }),
+                ('mergetype', {
+                        'type': np.int32,
+                        'label': "Merger Type",
+                        'description': "Merger type: "\
+                            "0=none; 1=minor merger; 2=major merger; "\
+                            "3=disk instability; 4=disrupt to ICS",
+                        'group': "Internal",
+                        'order': 40,
+                        }),
+                ('dT', {
+                        'type': np.float32,
+                        'label': "Galaxy Age",
+                        'group': "Internal",
+                        'order': 41,
+                        }),
+                
+                ('Descendant', {
+                        'description': 'Tree-local index of the descendant ',
+                        'type': np.int32,
+                        'group': "Internal",
+                        'order': 42,
+                        }),
+                ("GalaxyIndex", {
+                        "type": np.int64,
+                        "order": 43,
+                        "units": "None",
+                        "group": "Internal",
+                        }),
+                
                  ])
 
         self.src_fields_dict = src_fields_dict
@@ -718,19 +762,23 @@ class MERAXESConverter(tao.Converter):
                         dict_counts = OrderedDict([(f, n) for (f, n) in
                                                    zip(sorted_uniq_fids, sorted_nhalos) if f in last_snap_forestids])
                         tree_counts[snap] = dict_counts
-                        for fid, n in zip(sorted_uniq_fids, sorted_nhalos):
+                        for fid, n in dict_counts.items():
+                            # all ForestID must be in the last snapshot
                             if fid not in last_snap_forestids:
-                                print("On core {0} and snap = {1} found fid = {2} that is "
-                                      "not present in last snapshot forest ids".format(icore, snap, fid))
-                                continue
+                                msg = "On core {0} and snap = {1} found fid "\
+                                    "= {2} that is not present in last "\
+                                    "snapshot forest ids".format(icore, snap,
+                                                                 fid)
+                                raise ValueError(msg)
                             
                             ngalaxies_per_snap[snap] += n
-                            
                             old_snap = tree_first_snap[fid]
-                            if old_snap != (snap + 1) and old_snap !=  all_snaps[0]:
-                                print("Forest with forestid = {0} is skipping "
-                                      "snapshots [{1}, {2}] ".
-                                      format(fid, old_snap - 1, snap + 1))
+                            if (old_snap != (snap + 1)) and (old_snap !=  \
+                                    all_snaps[0]):
+                                print("On core {0}, forest with forestid = {1} "
+                                      "is skipping snapshots [{2}, {3}] ".
+                                      format(icore, fid, old_snap - 1,
+                                             snap + 1))
                                 
                             tree_first_snap[fid] = snap
 
@@ -752,8 +800,8 @@ class MERAXESConverter(tao.Converter):
                         # at the 0'th array index. The first tree begins
                         # offset = nhalos(first tree). Thus, the cumulative
                         # sum is over the entire array, but the array is 
-                        # shifted by 1 during the assignment (ie., cumul[1]
-                        # goes to offset[0], cum[2] goes to offset[1]) .
+                        # shifted by 1 during the assignment (ie., cumul[0]
+                        # goes to offset[1], cumul[1] goes to offset[2]) .
                         offsets[1:] = (nhalos.cumsum())[0:-1]
                         dict_offsets = OrderedDict([(f, o) for (f, o) in
                                                     zip(file_fids, offsets)])
@@ -792,6 +840,8 @@ class MERAXESConverter(tao.Converter):
                    'metalscoldgas': 'MetalsColdGas',
                    'diskscaleradius': 'DiskScaleLength',
                    'objecttype': 'Type',
+                   'descendant':'Descendant',
+                   'dt': 'dT',
                    }
 
         return mapping
@@ -841,6 +891,14 @@ class MERAXESConverter(tao.Converter):
             "NewStars_2",
             "NewStars_3",
             "NewStars_4",
+            'sfrdisk',
+            'sfrbulge',
+            'sfrdiskz', 
+            'sfrbulgez', 
+            "mergeIntoID",
+            "mergetype",
+            'mergeIntoSnapNum',
+            'GalaxyIndex',
             ]
 
         fields = OrderedDict()
@@ -897,65 +955,6 @@ class MERAXESConverter(tao.Converter):
             lt_times
 
 
-    @profile
-    def map_descendant(self, tree):
-        """Calculate the SAGE tree structure.
-
-        SAGE does not output the descendant information in its tree files
-        in a directly usable format. To calculate it we need to capitalise
-        on the snapshot ordering of the input data, the GalaxyIndex field,
-        and the mergeIntoID field.
-        """
-        print("in map_descendant. len(tree) = {0}".format(len(tree)))
-        descs = np.empty(len(tree), np.int32)
-        descs.fill(-1)
-
-        """
-        Now my attempt at this mapping descendants
-        First, sort the entire tree into using GalaxyIndex as
-        primary key and then snapshot number as secondary key.
-        This sorted indices will naturally flow a galaxy from
-        earlier times (lower snapshot numbers) to later times (larger
-        snapshot number)
-        """
-        sorted_ind = np.argsort(tree, order=('ID', 'snapnum'))
-        all_gal_idx = tree['ID']
-        for ii, idx in enumerate(all_gal_idx[sorted_ind]):
-            jj = ii + 1
-            if (jj < len(tree)) and (idx == all_gal_idx[sorted_ind[jj]]):
-                assert descs[sorted_ind[ii]] == -1
-                # assert tree['SnapNum'][sorted_ind[jj]] > \
-                #     tree['SnapNum'][sorted_ind[ii]]
-                # assert tree['GalaxyIndex'][sorted_ind[ii]] == \
-                #     tree['GalaxyIndex'][sorted_ind[jj]]
-                descs[sorted_ind[ii]] = sorted_ind[jj]
-
-        # Run validation on descendants
-        for ii, desc in enumerate(descs):
-            if desc == -1:
-                this_galidx = tree['ID'][ii]
-                this_snapnum = tree['snapnum'][ii]
-
-                # No descendant -> there can not be any galaxy
-                # with the same galaxy index at a higher snapshot
-                ind = (np.where((tree['ID'] == this_galidx) &
-                                (tree['snapnum'] > this_snapnum)))[0]
-                msg = "desc == -1 but real descendant = {0}\n".format(ind)
-                if len(ind) != 0:
-                    print("tree['ID'][{0}] = {1} at snapshot = {2} "
-                          "should be a descendant for ii = {3} with idx = {4} "
-                          "at snapshot = {5}".format(
-                            ind, tree['ID'][ind],
-                            tree['snapnum'][ind], ii,
-                            this_galidx, this_snapnum))
-                assert len(ind) == 0, msg
-            else:
-                assert tree['snapnum'][desc] > tree['snapnum'][ii]
-                assert tree['ID'][desc] == tree['ID'][ii]
-
-        return descs
-
-    @profile
     def Vpeak(self, tree):
         """
         Calculates the max. of Vmax during the halo history
@@ -1023,9 +1022,17 @@ class MERAXESConverter(tao.Converter):
                            'sfrbulge': self.sfrbulge,
                            'sfrdiskz': self.sfrdiskz,
                            'sfrbulgez': self.sfrbulgez,
+                           'GalaxyIndex': lambda x : x['ID'],
                            }
         
-        computed_field_list = [('snapnum',  self.src_fields_dict['snapnum']['type'])]
+        computed_field_list = [('snapnum',  self.src_fields_dict['snapnum']['type']),
+                               ('mergeIntoID', self.src_fields_dict['mergeIntoID']['type']),
+                               ('mergeIntoSnapNum', self.src_fields_dict['mergeIntoSnapNum']['type']),
+                               ('mergetype', self.src_fields_dict['mergetype']['type']),
+                               ('dT', self.src_fields_dict['dT']['type']),
+                               ('Descendant', self.src_fields_dict['Descendant']['type']),
+                               ]
+        
         allkeys = [k.lower() for k in self.src_fields_dict.keys()]
         for f in computed_fields:
             if f.lower() not in allkeys:
@@ -1042,6 +1049,8 @@ class MERAXESConverter(tao.Converter):
         snaps = snaps[rev_sorted_ind]
         redshift = redshifts[rev_sorted_ind]
         lt_times = lt_times[rev_sorted_ind]
+        dt_values = np.ediff1d(lt_times, to_begin=lt_times[0])
+        print("dt_values = {0}".format(dt_values))
         
         ntrees = self.get_ntrees()
         totntrees = sum(ntrees.values())
@@ -1057,7 +1066,7 @@ class MERAXESConverter(tao.Converter):
                     ordered_type.append((name, typ))
                 except ValueError:
                     name, typ, shape = d
-                    for k in xrange(shape[0]):
+                    for k in range(shape[0]):
                         ordered_type.append(('{0}_{1}'.format(name, k), typ))
 
 
@@ -1073,12 +1082,16 @@ class MERAXESConverter(tao.Converter):
             # for icore in np.arange(7, ncores+1):
             for icore in range(ncores):
                 ntrees_this_core = ntrees[icore]
-                print("Working on {0} trees on core = {1}".format(
-                        ntrees_this_core, icore))
+                # print("Working on {0} trees on core = {1}".format(
+                #         ntrees_this_core, icore))
                 fin_galaxies_per_snap = dict()
+                descendant_fin_per_snap = dict()
                 for snap in snaps:
                     fin_galaxies_per_snap[snap] = fin['Snap{0:03d}/Core{1:d}/Galaxies'.
                                                       format(snap, icore)]
+                    if snap != max(snaps):
+                        descendant_fin_per_snap[snap] = fin['Snap{0:03d}/Core{1:d}/DescendantIndices'.
+                                                            format(snap, icore)]
 
                 tree_fids, tree_counts, tree_offsets, tree_first_snap, ngalaxies_per_snap = self.get_tree_counts_and_offsets(icore)
                 #ngalaxies_per_snap = self.ngalaxies_per_snap(icore)
@@ -1120,14 +1133,15 @@ class MERAXESConverter(tao.Converter):
                     tree_size = vertical_tree_sizes[forest]
                     offsets = vertical_tree_offsets[forest]
                     
-                    # print("Working on itree = {0} on core = {1}. Tree size = {2}".format(itree, icore, tree_size))
+                    # print("Working on forest = {0} on core = {1}. Tree size = {2}".format(forest, icore, tree_size))
                     tree = np.empty(tree_size, dtype=src_type)
                     
                     offs = 0
                     first_snap = tree_first_snap[forest]
-                    good_snaps = np.arange(first_snap, snaps[0]+1)
+                    good_snaps = np.arange(snaps[0], first_snap-1, -1)
+                    ngalaxies_future_snap = 0
+                    future_snap = -1
                     for snap in good_snaps:
-
                         ngalaxies_this_snap = (tree_ngalaxies[forest])[snap]
                         if ngalaxies_this_snap == 0:
                             continue
@@ -1138,21 +1152,33 @@ class MERAXESConverter(tao.Converter):
                         #       format(snap, icore, ngalaxies_this_snap))
                         galaxies = fin_galaxies_per_snap[snap]
                         start_offset = (vertical_tree_offsets[forest])[snap]
-                        # print("snap = {3} forest = {0} ngalaxies = {2} start_offset = {1}".format(forest, start_offset, ngalaxies_this_snap, snap))
+                        #print("snap = {3} forest = {0} ngalaxies = {2} start_offset = {1}".format(forest, start_offset, ngalaxies_this_snap, snap))
                         source_sel = np.s_[start_offset: start_offset + ngalaxies_this_snap]
                         dest_sel = np.s_[offs:offs + ngalaxies_this_snap]
                         gal_data = galaxies[source_sel]
+                        if snap != max(good_snaps):
+                            descendants = descendant_fin_per_snap[snap]
+                            descs = descendants[source_sel]
+                        else:
+                            descs = np.empty(ngalaxies_this_snap, dtype=np.int32)
+                            descs[:] = -1
+
+                        # Fix the descendant offset
+                        if snap != max(good_snaps):
+                            descs[descs > -1] += (offs - prev_offset -
+                                                  ngalaxies_future_snap)
                         
                         if len(gal_data) != ngalaxies_this_snap:
                             Tracer()()
                         
                         tree[dest_sel] = gal_data
                         tree[dest_sel]['snapnum'] = snap
+                        tree[dest_sel]['Descendant'] = descs
 
                         this_centrals = tree['CentralGal'][dest_sel]
                         centralgalind = (np.where(this_centrals >= 0))[0]
+                        prev_offset = tree_offsets[snap][forest]
                         if len(centralgalind) > 0:
-                            prev_offset = tree_offsets[snap][forest]
                             min_this_centrals = min(this_centrals[centralgalind])
                             if (min_this_centrals + offs - prev_offset) < 0:
                                 msg = "ERROR: Shifting centralgals will result "\
@@ -1181,6 +1207,14 @@ class MERAXESConverter(tao.Converter):
                                             this_centrals)
                                     
                                 raise ValueError(msg)
+
+                        # The processing is done with the latest snapshot first
+                        # and then backwards in time. Thus, ngalaxies_future_snap
+                        # contains the number of galaxies in snapshot that has
+                        # already been processed
+                        future_snap = snap
+                        ngalaxies_future_snap = ngalaxies_this_snap
+                        future_snap_index_offset = (offs - prev_offset)
                             
                         offs += ngalaxies_this_snap
                         if offs > tree_size:
@@ -1189,7 +1223,8 @@ class MERAXESConverter(tao.Converter):
                                 'occurred. Bug in code'.format(itree, tree_size,
                                                                offs)
                             raise ValueError(msg)
-                        
+              
+                                      
                     # The entire forest has been loaded
                     if offs != tree_size:
                         msg = "For tree = {0}, expected to find total number of "\
@@ -1215,6 +1250,59 @@ class MERAXESConverter(tao.Converter):
                     # One tree has been completely loaded (vertical tree now)
                     for fieldname, conv_func in computed_fields.items():
                         tree[fieldname] = conv_func(tree)
+
+                  
+                    # Since I need to use the descendants now, I have to validate
+                    # the indices. For *any* galaxy, the descendant should be 
+                    # -1, or a valid index in the next snapshot [0, ngalaxies[nextsnap])
+                    # When a valid index is present, is found the galaxy id must
+                    # either equal current galaxyid. If the equality is not satisfied
+                    # then a merger has occurred and *all* future snapshots including
+                    # `nextsnap`  *can not* contain current galaxyid.
+
+                    # Validate Descendants and Populate the "merger" fields required
+                    # for the SED module. Needs to be in a converter_function
+                    # but 4 fields are being updated by one function. Ideally
+                    # the converter function itself should be the key and
+                    # the values should the list of fields
+                        
+                    tree['mergeIntoID'] = -1
+                    tree['mergeIntoSnapNum'] = -1
+                    tree['mergetype'] = 0
+                    for gal in tree:
+                        gid, d = gal['ID'], gal['Descendant']
+                        # no valid descendant, nothing to verify
+                        if d == -1:
+                            continue
+
+                        if gid == tree['ID'][d]:
+                            # The galaxy continues as itself
+                            gal['mergeIntoID'] = -1
+                            gal['mergeIntoSnapNum'] = -1
+                            gal['mergetype'] = 0
+                            continue
+                        
+                        else:
+                           ind = (np.where((tree['snapnum'] > gal['snapnum']) &
+                                           (tree['ID'] == gid)))[0]
+                           if len(ind) > 0:
+                               msg = 'Error: Galaxy with ID = {0} '\
+                                     'at snapshot = {1} has descendant ID = '\
+                                     '{2} (which is different) but this galaxy '\
+                                     'exists at future snapshots. Num Tree matches '\
+                                     'in the future snaps = {3}. snaps = {4} with '\
+                                     'iD = {5}'.format(gid, gal['snapnum'],
+                                                       tree['ID'][d], len(ind),
+                                                       tree['snapnum'][ind],
+                                                       tree['ID'][ind])
+                               Tracer()()
+                               raise tao.ConversionError(msg)
+                           gal['mergeIntoID'] = tree['ID'][d]
+                           gal['mergeIntoSnapNum'] = future_snap
+                           gal['mergetype'] = 2
+
+                    # Populate the field with galaxy ages (required by TAO SED module) 
+                    tree['dT'] = dt_values[tree['snapnum']]
 
                     # First validate some fields.
                     for f in ['Type', 'ID', 'snapnum']:
@@ -1253,7 +1341,7 @@ class MERAXESConverter(tao.Converter):
 
                 # Now validate that *ALL* galaxies on this core
                 # were transferred
-                print("ngalaxies_per_snap = {0}\n".format(ngalaxies_per_snap))
+                # print("ngalaxies_per_snap = {0}\n".format(ngalaxies_per_snap))
                 if not bool(np.all(ngalaxies_per_snap ==
                                    converted_ngalaxies_per_snap)):
                     msg = "Error: Did not convert *all* galaxies for core "\
