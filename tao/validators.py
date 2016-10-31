@@ -67,7 +67,39 @@ class NonZero(FieldValidator):
                 msg = 'Invalid value in "%s".'%fld
                 msg += ' Should be non-zero.'
                 raise ValidationError(msg)
-                
+
+
+class NonZeroDistribution(FieldValidator):
+    """
+    Validator that ensures that the distribution of values
+    has some width.
+
+    Initiated to cover the case where field was initialized
+    but never copied over, resulting in all 0's
+    
+    """
+
+    def __init__(self, minwidth, minsize, *fields):
+        super(NonZeroDistribution, self).__init__(*fields)
+        self.minwidth = minwidth
+        self.minsize = minsize
+    
+    def validate_fields(self, fields):
+        for fld in self.fields:
+            if fld not in fields:
+                continue
+
+            data = fields[fld]
+            diff = max(data) - min(data)
+            # If there are only 1 or two halos, then a narrow
+            # distribution is possible
+            if diff <= self.minwidth and len(data) >= self.minsize:
+                msg = 'At least %s values are within min. width = %s for field "%s".'\
+                    %(self.minsize, self.minwidth, fld)
+                msg += '. Found values of min,max=[%s,%s]. Size = %s'\
+                    %(min(data),max(data), len(data))
+                raise ValidationError(msg)
+            
         
 class WithinRange(FieldValidator):
 
@@ -80,14 +112,14 @@ class WithinRange(FieldValidator):
         for fld in self.fields:
             if fld not in fields:
                 continue
-
+            
             data = fields[fld]
             if min(data) < self.lower or max(data) > self.upper:
                     msg = 'Invalid values in "%s".'%fld
                     msg += ' Should be within range [%s, %s], but found value of min,max=[%s,%s].'%(self.lower, self.upper, min(data),max(data))
                     raise ValidationError(msg)
                 
-        
+
 class WithinCRange(FieldValidator):
 
     def __init__(self, lower, upper, *fields):
@@ -103,7 +135,9 @@ class WithinCRange(FieldValidator):
             data = fields[fld]
             if min(data) < self.lower or max(data) > (self.upper-1):
                     msg = 'Invalid value in "%s".'%fld
-                    msg += ' Should be within range [%s, %s], but found value of min,max= [%s,%s].'%(self.lower, self.upper, min(data), max(data))
+                    msg += ' Should be within range [%s, %s], but found value'\
+                        ' of min,max= [%s,%s].'\
+                        %(self.lower, self.upper, min(data), max(data))
                     raise ValidationError(msg)
 
             

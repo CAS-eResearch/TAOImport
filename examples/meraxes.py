@@ -1005,6 +1005,30 @@ class MERAXESConverter(tao.Converter):
         """
         return tree['MetalsColdGas']
 
+    def copy_array_fields(self, src_tree, dest_tree, fieldname, shape):
+        """
+        Copies fields that are arrays into individual elements
+        per array.
+
+        for example, pos[3] gets copied to pos_0, pos_1, pos_2
+
+        More generally, field[shape] gets copied into
+        field_0, field_1, ..field_(shape-1)
+        """
+
+        if len(src_tree) != len(dest_tree):
+            msg = 'The source and destination arrays must be of the same'\
+                'size. Source size = {0} dest. size = {1}'.format(
+                len(src_tree), len(dest_tree))
+            raise tao.ConversionError(msg)
+        
+        # Get the field
+        for (fld, dst) in zip(src_tree[fieldname], dest_tree):
+            for axis in range(shape[0]):
+                dest_fieldname = '{0}_{1}'.format(fieldname, axis)
+                dst[dest_fieldname] = fld[axis]
+        
+    
     def sfrbulgez(self, tree):
         """
         Return avg. metallicity of star forming bulge cold gas in
@@ -1042,6 +1066,7 @@ class MERAXESConverter(tao.Converter):
             field_dtype_dict = self.src_fields_dict[f]
             computed_field_list.append((f, field_dtype_dict['type']))
 
+
         sim_file = self.get_simfilename()
         params = self.read_input_params(sim_file)
         snaps, redshifts, lt_times = self.read_snaplist(sim_file)
@@ -1050,11 +1075,11 @@ class MERAXESConverter(tao.Converter):
         redshift = redshifts[rev_sorted_ind]
         lt_times = lt_times[rev_sorted_ind]
         dt_values = np.ediff1d(lt_times, to_begin=lt_times[0])
-        print("dt_values = {0}".format(dt_values))
         
         ntrees = self.get_ntrees()
         totntrees = sum(ntrees.values())
 
+        array_fields = []
         with h5py.File(sim_file, "r") as fin:
             ncores = fin.attrs['NCores'][0]
             snap_group = fin['Snap%03d' % snaps[0]]
@@ -1066,6 +1091,7 @@ class MERAXESConverter(tao.Converter):
                     ordered_type.append((name, typ))
                 except ValueError:
                     name, typ, shape = d
+                    array_fields.append((name, shape))
                     for k in range(shape[0]):
                         ordered_type.append(('{0}_{1}'.format(name, k), typ))
 
@@ -1170,10 +1196,14 @@ class MERAXESConverter(tao.Converter):
                         
                         if len(gal_data) != ngalaxies_this_snap:
                             Tracer()()
-                        
+
                         tree[dest_sel] = gal_data
                         tree[dest_sel]['snapnum'] = snap
                         tree[dest_sel]['Descendant'] = descs
+
+                        for (fieldname, shape) in array_fields:
+                            self.copy_array_fields(gal_data, tree[dest_sel],
+                                                   fieldname, shape)
 
                         this_centrals = tree['CentralGal'][dest_sel]
                         centralgalind = (np.where(this_centrals >= 0))[0]
@@ -1251,7 +1281,7 @@ class MERAXESConverter(tao.Converter):
                     for fieldname, conv_func in computed_fields.items():
                         tree[fieldname] = conv_func(tree)
 
-                  
+
                     # Since I need to use the descendants now, I have to validate
                     # the indices. For *any* galaxy, the descendant should be 
                     # -1, or a valid index in the next snapshot [0, ngalaxies[nextsnap])
