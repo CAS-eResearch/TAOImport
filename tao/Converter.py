@@ -8,6 +8,8 @@ from .xml import get_settings_xml
 from collections import OrderedDict
 import os
 
+from datetime import datetime
+
 class ConversionError(Exception):
     pass
 
@@ -166,6 +168,14 @@ class Converter(object):
             ])
             sys.exit(1)
 
+        
+        library['dataset-version'] = datetime.today().strftime("%d-%m-%Y")
+
+        # argparse changes '-' to '_'. Hence, the field is
+        # "dataset_version" rather than "dataset-version"
+        if self.args.dataset_version:
+            library['dataset-version'] = self.args.dataset_version
+            
         # Cache some information for other parts of the system.
         library['box_size'] = sim['box_size']
         library['redshifts'] = redshifts

@@ -33,6 +33,9 @@ settings_tmpl = """<settings>
     <Snapshots>
 {redshifts}
     </Snapshots>
+    <Version>
+    {dataset-version}
+    </Version>
   </PGDB>
   <RunningSettings>
     <Simulation>{sim_name}</Simulation>
@@ -185,4 +188,5 @@ def get_settings_xml(dtype, redshifts, metadata):
                                 sim_name = library['sim-name'],
                                 model_name = library['model-name'],
                                 hubble = library['hubble'],
-                                box_size=library['box_size'])
+                                box_size=library['box_size'],
+                                dataset-version=library['dataset-version'])

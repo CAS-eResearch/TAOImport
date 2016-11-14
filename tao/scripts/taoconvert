@@ -13,6 +13,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', default='output', help='output name')
     parser.add_argument('-i', '--info', action='store_true', help='show information about all fields')
     parser.add_argument('-f', '--field', help='show information about a field')
+    parser.add_argument('-d', '--dataset-version', help='an unique identifier for the dataset')
 
     # Scan for all modules.
     modules = find_modules()
