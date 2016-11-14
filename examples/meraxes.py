@@ -89,7 +89,7 @@ class MERAXESConverter(tao.Converter):
                         "label": "Subhalo X-postion",
                         "order": 7,
                         "units": "Mpc/h",
-                        "group": "Positions and velocities",
+                        "group": "Positions & velocities",
                         "description": "Position of host subhalo at snapshot "\
                             "when last identified"
                         }),
@@ -98,7 +98,7 @@ class MERAXESConverter(tao.Converter):
                         "label": "Subhalo Y-postion",
                         "order": 8,
                         "units": "Mpc/h",
-                        "group": "Positions and velocities",
+                        "group": "Positions & velocities",
                         "description": "Position of host subhalo at snapshot "\
                             "when last identified"
                         }),
@@ -107,7 +107,7 @@ class MERAXESConverter(tao.Converter):
                         "label": "Subhalo Z-postion",
                         "order": 9,
                         "units": "Mpc/h",
-                        "group": "Positions and velocities",
+                        "group": "Positions & velocities",
                         "description": "Position of host subhalo at snapshot "\
                             "when last identified"
                         }),
@@ -116,7 +116,7 @@ class MERAXESConverter(tao.Converter):
                     "label": "Subhalo X-velocity",
                     "order": 10,
                     "units": "km/s",
-                    "group": "Positions and velocities",
+                    "group": "Positions & velocities",
                     "description": "Comoving velocity of subhalo at last "\
                         "snapshot identified"
                     }),
@@ -125,7 +125,7 @@ class MERAXESConverter(tao.Converter):
                     "label": "Subhalo Y-velocity",
                     "order": 11,
                     "units": "km/s",
-                    "group": "Positions and velocities",
+                    "group": "Positions & velocities",
                     "description": "Comoving velocity of subhalo at last "\
                         "snapshot identified"
                     }),
@@ -134,7 +134,7 @@ class MERAXESConverter(tao.Converter):
                     "label": "Subhalo Z-velocity",
                     "order": 12,
                     "units": "km/s",
-                    "group": "Positions and velocities",
+                    "group": "Positions & velocities",
                     "description": "Comoving velocity of subhalo at last "\
                         "snapshot identified"
                     }),
@@ -150,7 +150,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Subhalo virial mass",
                         "order": 14,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Halo Properties",
                         "description": "Virial mass of host subhalo"
                         }),
@@ -182,7 +182,7 @@ class MERAXESConverter(tao.Converter):
                     "type": np.float32,
                     "label": "FOF virial mass",
                     "order": 18,
-                    "units": "1e10 solMass/h",
+                    "units": "10^10 Msun/h",
                     "group": "Halo Properties",
                     "description": "Virial mass of the host friends-of-friends group"
                     }),
@@ -190,7 +190,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Hot gas mass",
                         "order": 19,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Galaxy Masses",
                         "description": "Mass of hot gas"
                         }),
@@ -198,7 +198,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Hot metals mass",
                         "order": 20,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Galaxy Masses",
                         "description": "Mass of metals contained within hot gas component"
                         }),
@@ -206,7 +206,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Cold gas mass",
                         "order": 21,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Galaxy Masses",
                         "description": "Mass of cold gas"
                         }),
@@ -214,7 +214,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Cold gas metals",
                         "order": 22,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Galaxy Masses",
                         "description": "Mass of metals contained within cold gas component"
                         }),
@@ -222,7 +222,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Cooling mass",
                         "order": 23,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Galaxy Masses",
                         "description": "Mass of baryons cooling onto the galaxy in current timestep"
                         }),
@@ -238,7 +238,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Stellar mass",
                         "order": 25,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Galaxy Masses",
                         "description": "Galaxy stellar mass"
                         }),
@@ -246,7 +246,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Gross stellar mass",
                         "order": 26,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Galaxy Masses",
                         "description": "Galaxy stellar mass excluding SN mass loss"
                         }),
@@ -254,7 +254,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Stellar metals",
                         "order": 27,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Galaxy Masses",
                         "description": "Mass of metals in stellar component"
                         }),
@@ -270,7 +270,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Ejected gas",
                         "order": 29,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Galaxy Masses",
                         "description": "Mass of gas ejected from system in current timestep"
                         }),
@@ -278,15 +278,15 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Ejected metals",
                         "order": 30,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Galaxy Masses",
                         "description": "Mass of metals in ejected component"
                         }),
                 ("BlackHoleMass", {
                         "type": np.float32,
-                        "label": "",
+                        "label": "Black hole mass",
                         "order": -1,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Internal",
                         "description": "Currently unused"
                         }),
@@ -350,7 +350,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "Critical virial mass for photo supression",
                         "order": 34,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Galaxy Properties",
                         "description": "The halo mass at which 50% of baronic infall would be supressed, given the intensity of the local UVB."
                         }),
@@ -366,7 +366,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "New stars",
                         "order": -1,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Internal",
                         "description": "The stars formed in this snapshot."
                         }),
@@ -374,7 +374,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "New stars",
                         "order": -1,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Internal",
                         "description": "The stars formed in current snapshot - 1."
                         }),
@@ -382,7 +382,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "New stars",
                         "order": -1,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Internal",
                         "description": "The stars formed in current snapshot - 2."
                         }),
@@ -390,7 +390,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "New stars",
                         "order": -1,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Internal",
                         "description": "The stars formed in current snapshot - 3."
                         }),
@@ -398,7 +398,7 @@ class MERAXESConverter(tao.Converter):
                         "type": np.float32,
                         "label": "New stars",
                         "order": -1,
-                        "units": "1e10 solMass/h",
+                        "units": "10^10 Msun/h",
                         "group": "Internal",
                         "description": "The stars formed in current snapshot - 4."
                         }),
