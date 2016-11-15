@@ -169,7 +169,7 @@ class Converter(object):
             sys.exit(1)
 
         
-        library['dataset-version'] = datetime.today().strftime("%d-%m-%Y")
+        library['dataset-version'] = datetime.today().strftime("%Y-%m-%d")
 
         # argparse changes '-' to '_'. Hence, the field is
         # "dataset_version" rather than "dataset-version"
