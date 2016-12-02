@@ -196,7 +196,7 @@ class Converter(object):
 
         library['model-name'] = self.args.model_name
 
-        outfilename = os.path.dirname(self.args.output) + '/settings.xml'
+        outfilename = self.args.output + '-settings.xml'
         with open(outfilename, 'w') as f:
             f.write(get_settings_xml(self.galaxy_type, redshifts,
                                      self.metadata))
