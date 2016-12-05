@@ -26,6 +26,6 @@ setup(
     packages=find_packages(),
     scripts=['tao/scripts/taoconvert'],
     include_package_data=True,
-    install_requires=['setuptools','progressbar2', 'h5py'],
+    install_requires=['setuptools','tqdm', 'h5py'],
     zip_safe=False,
 )

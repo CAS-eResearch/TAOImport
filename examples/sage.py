@@ -8,7 +8,7 @@ import re, os
 import numpy as np
 import tao
 from collections import OrderedDict
-import progressbar
+from tqdm import tqdm
 
 class SAGEConverter(tao.Converter):
     """Subclasses tao.Converter to perform SAGE output conversion."""
@@ -852,9 +852,6 @@ class SAGEConverter(tao.Converter):
                 n_trees = np.fromfile(f, np.uint32, 1)[0]
                 totntrees += n_trees
 
-        numtrees_processed = 0
-        bar = progressbar.ProgressBar(max_value=totntrees)
-
         for group in group_strings:
             files = []
             for redshift in redshift_strings:
@@ -865,8 +862,10 @@ class SAGEConverter(tao.Converter):
             n_gals = [np.fromfile(f, np.uint32, 1)[0] for f in files]
             chunk_sizes = [np.fromfile(f, np.uint32, n_trees) for f in files]
             tree_sizes = sum(chunk_sizes)
+            print("Working on ntrees = {0} in group = {1}".format(n_trees,
+                                                                  group))
 
-            for ii in xrange(n_trees):
+            for ii in tqdm(xrange(n_trees)):
                 tree_size = tree_sizes[ii]
                 tree = np.empty(tree_size, dtype=src_type)
                 offs = 0
@@ -910,9 +909,6 @@ class SAGEConverter(tao.Converter):
                               tree['CentralGalaxyIndex'][ind])), \
                     "Central Galaxy Index must equal Galaxy Index for centrals"
                               
-                numtrees_processed += 1
-                bar.update(numtrees_processed)
-                
                 yield tree
 
             for file in files:

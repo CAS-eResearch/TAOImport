@@ -9,7 +9,7 @@ import os
 import numpy as np
 import tao
 from collections import OrderedDict
-import progressbar
+from tqdm import tqdm
 import h5py
 from IPython.core.debugger import Tracer
 
@@ -745,6 +745,7 @@ class MERAXESConverter(tao.Converter):
                     tree_first_snap[fid] = all_snaps[0]
 
                 for snap in all_snaps:
+                for snap in tqdm(all_snaps):
                     tree_counts[snap] = OrderedDict()
                     tree_offsets[snap] = OrderedDict()
                     this_snap_group = fin['Snap{0:03d}'.format(snap)]
@@ -1100,7 +1101,6 @@ class MERAXESConverter(tao.Converter):
         src_type = np.dtype(ordered_type)
 
         numtrees_processed = 0
-        bar = progressbar.ProgressBar(max_value=totntrees)
         print("totntrees = {0}".format(totntrees))
 
         with h5py.File(sim_file, "r") as fin:
@@ -1125,7 +1125,7 @@ class MERAXESConverter(tao.Converter):
                 vertical_tree_sizes = dict()
                 vertical_tree_offsets = dict()
                 tree_ngalaxies = dict()
-                for forest in tree_fids:
+                for forest in tqdm(tree_fids):
                     ngalaxies = np.zeros(max(snaps) + 1, dtype=np.int64)
                     offsets = np.zeros(max(snaps) + 1, dtype=np.int64)
                     first_snap = tree_first_snap[forest]
@@ -1155,7 +1155,8 @@ class MERAXESConverter(tao.Converter):
                 # print("icore = {0}; ntrees = {1} ".format(icore, ntrees_this_core))
                 # print("tree_fids = {0}".format(tree_fids))
                 # tree_offsets_per_snap = np.zeros(max(snaps)+1,dtype=np.int64)
-                for forest in tree_fids:
+                for forest in tqdm(tree_fids):
+
                     tree_size = vertical_tree_sizes[forest]
                     offsets = vertical_tree_offsets[forest]
                     
@@ -1364,8 +1365,6 @@ class MERAXESConverter(tao.Converter):
                                        tree['ID'][centralgalind])), \
                                        "Central Galaxy ID must equal GalaxyID for centrals"
 
-                    numtrees_processed += 1
-                    bar.update(numtrees_processed)
 
                     yield tree
 
