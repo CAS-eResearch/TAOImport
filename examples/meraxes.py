@@ -10,6 +10,7 @@ import numpy as np
 import tao
 from collections import OrderedDict
 from tqdm import tqdm
+from tqdm import trange
 import h5py
 from IPython.core.debugger import Tracer
 
@@ -642,27 +643,8 @@ class MERAXESConverter(tao.Converter):
                         
         return ntrees
 
-    def get_ngalaxies_per_snap(self, icore):
-        r"""
-        Returns a numpy array containing the total number
-        of galaxies at each snapshot for that core.
 
-      
-        """
-        with h5py.File(self.get_simfilename(), "r") as fin:
-            lk = list(fin.keys())
-            all_snaps = np.asarray([np.int32(k[-3:]) for k in lk if 'Snap' in k])
-            ngalaxies_per_snap = np.zeros(max(all_snaps) + 1, dtype=np.int64)
-            for snap in all_snaps:
-                snap_group = fin['Snap{0:03d}'.format(snap)]
-                galaxies = snap_group['Core%d/Galaxies' % icore]
-                ngalaxies_per_snap[snap] = galaxies.size
-
-        print("ngalaxies_per_snap = {0}".format(ngalaxies_per_snap))
-        return ngalaxies_per_snap
-
-    @profile
-    def get_tree_counts_and_offsets(self, icore):
+    def get_tree_counts_and_offset(self, icore):
         r"""
         Returns an array of offsets and lengths into the h5py
         file for each tree at each snapshot.
@@ -689,34 +671,34 @@ class MERAXESConverter(tao.Converter):
              The forestIDs at the last snapshot that the following dictionaries
              contain as keys
         
-        tree_counts : dictionary of dictionaries,
-                      {key='snap', value={key='ForestID', value='ngalaxies',
-                      dtype=np.int32}
-             An dictionary with key as 'snapshot'. The result is another
-             dictionary with key 'ForestID' and the number of galaxies at
-             that snapshot as the value. 
-        
-        tree_offsets : dictionary of dictionaries,
-                       {key='snap', value={key='ForestID',
-                        value=`np.int64`,
-              Offset per tree per snapshot (`np.int64`) containing
-              the beginning offset within the hdf5 snapshot dataset for that
-              tree. The offset is the number of galaxies preceeding this tree
-              *AND NOT* the bytes offset.
+        tree_counts : 2-dimensional int64 array, indexed by [forest, snapshot]
+             Gives the number of galaxies per snapshot per forest.
 
-        tree_first_snap : dictionary, {key='ForestID', value=`np.int32`}
+             The forests correspond to the order returned in forestids.
+        
+        tree_offsets : 2-dimensional int64 array, indexed by [forest, snapshot]
+             Gives the starting offset per forest per snapshot within the hdf5
+             snapshot dataset for that forest. The offset is the number of
+             galaxies preceeding that forest in that snapshot. The offset is
+             the number of galaxies preceeding this tree  *AND NOT* the bytes
+             offset.
+
+             The forests correspond to the order returned in forestids.
+        
+        tree_first_snap : int32 array, indexed by [forest]
               First snapshot (highest redshift, earliest time) that the 
               tree is present.
 
-        ngalaxies_per_snap: array of length (max(snaps) + 1), so that
+              The forests correspond to the order returned in forestids.
+
+        ngalaxies_per_snap: int64 array of length (max(snaps) + 1), so that
               the array can be directly indexed by the snapshot number
               This is here to make sure that *only* the galaxies included
-              in the last snapshot forests are counted. 
+              associated with the last snapshot forests are counted. 
               
         """
         
         has_tree_counts = self.has_tree_counts()
-        nhalos_per_tree_per_snapshot = OrderedDict()
         fn =  self.get_simfilename()
         with h5py.File(fn, "r") as fin:
             lk = list(fin.keys())
@@ -727,61 +709,63 @@ class MERAXESConverter(tao.Converter):
             all_snaps = all_snaps[rev_sorted_ind]
             maxsnap = max(all_snaps)
             ncores = fin.attrs['NCores'][0]
-            
+
+            # Take the last snapshot group (all_snaps is sorted in
+            # descending order)
             snap_group = fin['Snap{0:03d}'.format(all_snaps[0])]
             this_core_group = 'Core{0:d}'.format(icore)
-            ngalaxies_per_snap = np.zeros(maxsnap+1, dtype=np.int64)
+            ngalaxies_per_snap = np.zeros(maxsnap + 1, dtype=np.int64)
             if has_tree_counts:
                 msg = 'Meraxes does not have this property yet. Check code'
                 raise ValueError(msg)
             else:
-                tree_counts, tree_offsets = dict(), dict()
                 galaxies = snap_group['{0}/Galaxies'.\
                                           format(this_core_group)]
                 last_snap_forestids = np.unique(galaxies['ForestID'])
-                nforests = len(last_snap_forestids)
-                tree_first_snap = OrderedDict()
-                for fid in last_snap_forestids:
-                    tree_first_snap[fid] = all_snaps[0]
+                last_snap_nforests = len(last_snap_forestids)
+                last_snap_forestids_to_array_index = dict()
 
-                for snap in all_snaps:
+                for ii, fid in enumerate(last_snap_forestids):
+                    last_snap_forestids_to_array_index[fid] = ii
+                
+                tree_first_snap = np.empty(last_snap_nforests, dtype=np.int32)
+                tree_counts = np.zeros((last_snap_nforests, maxsnap + 1), dtype=np.int64)
+                tree_offsets = np.zeros((last_snap_nforests, maxsnap + 1), dtype=np.int64)
+
+                tree_first_snap.fill(all_snaps[0])
+
                 for snap in tqdm(all_snaps):
-                    tree_counts[snap] = OrderedDict()
-                    tree_offsets[snap] = OrderedDict()
                     this_snap_group = fin['Snap{0:03d}'.format(snap)]
                     galaxies = this_snap_group['{0}/Galaxies'.\
                                                    format(this_core_group)]
                     forestids = galaxies['ForestID']
                     nforests = len(forestids)
                     if nforests > 0:
+                        
                         sorted_uniq_fids, \
                             orig_idx, \
                             sorted_nhalos = np.unique(forestids, 
                                                       return_index=True,
                                                       return_counts=True)
-
-                        dict_counts = OrderedDict([(f, n) for (f, n) in
-                                                   zip(sorted_uniq_fids, sorted_nhalos) if f in last_snap_forestids])
-                        tree_counts[snap] = dict_counts
-                        for fid, n in dict_counts.items():
-                            # all ForestID must be in the last snapshot
-                            if fid not in last_snap_forestids:
-                                msg = "On core {0} and snap = {1} found fid "\
-                                    "= {2} that is not present in last "\
-                                    "snapshot forest ids".format(icore, snap,
-                                                                 fid)
-                                raise ValueError(msg)
                             
-                            ngalaxies_per_snap[snap] += n
-                            old_snap = tree_first_snap[fid]
-                            if (old_snap != (snap + 1)) and (old_snap !=  \
-                                    all_snaps[0]):
-                                print("On core {0}, forest with forestid = {1} "
-                                      "is skipping snapshots [{2}, {3}] ".
-                                      format(icore, fid, old_snap - 1,
-                                             snap + 1))
-                                
-                            tree_first_snap[fid] = snap
+                        last_fid_inds = np.in1d(sorted_uniq_fids,
+                                                last_snap_forestids,
+                                                assume_unique=True)
+                        unique_last_forestids = np.intersect1d(
+                            last_snap_forestids,
+                            sorted_uniq_fids,
+                            assume_unique=True)
+                        unique_last_forestids_nhalos = sorted_nhalos[last_fid_inds]
+                        assert bool(np.all(sorted_uniq_fids[last_fid_inds] == unique_last_forestids))
+                        insertion_index = [last_snap_forestids_to_array_index[fid] for fid in unique_last_forestids]
+                        tree_counts[insertion_index, snap] = unique_last_forestids_nhalos
+
+                        # Check that all values in unique_last_forestids are in last_snap_forestids
+                        check_fid_inds = np.in1d(unique_last_forestids, last_snap_forestids)
+                        assert bool(np.all(check_fid_inds))
+
+                        ngalaxies_per_snap[snap] = unique_last_forestids_nhalos.sum()
+                        tree_first_snap[insertion_index] = snap
 
                         # This is complicated offset manipulation
                         # The sorted_nhalos corresponds to the sorted
@@ -791,6 +775,11 @@ class MERAXESConverter(tao.Converter):
                         # Sorting `orig_idx` gives me the order
                         # of appearance of the forest within the file
                         
+                        # Contains *ALL* forests at this snapshot
+                        # and is *AT LEAST* the same size as the final
+                        # snapshot forests. So the file offsets must be
+                        # computed over *ALL* forests, only computing over
+                        # forests at last snapshot will be wrong. 
                         file_order = np.argsort(orig_idx)
                         file_fids = sorted_uniq_fids[file_order]
                         nhalos = sorted_nhalos[file_order]
@@ -804,12 +793,17 @@ class MERAXESConverter(tao.Converter):
                         # shifted by 1 during the assignment (ie., cumul[0]
                         # goes to offset[1], cumul[1] goes to offset[2]) .
                         offsets[1:] = (nhalos.cumsum())[0:-1]
-                        dict_offsets = OrderedDict([(f, o) for (f, o) in
-                                                    zip(file_fids, offsets)])
-                        tree_offsets[snap] = dict_offsets
+
+                        # Now simply pick the offsets for the trees
+                        # that are present at the last snapshot. However, it
+                        # is possible that some forests present at this
+                        # snapshot are *NOT* present at the final snapshot. 
+                        # So only assign for the ones that *ARE* present 
+                        tree_offsets[insertion_index, snap] = offsets[last_fid_inds]
                         
         return last_snap_forestids, tree_counts, tree_offsets, tree_first_snap, ngalaxies_per_snap
 
+    
     
     def get_snapshot_redshifts(self):
         """Parse and convert the expansion factors.
@@ -1105,11 +1099,9 @@ class MERAXESConverter(tao.Converter):
 
         with h5py.File(sim_file, "r") as fin:
 
-            # for icore in np.arange(7, ncores+1):
             for icore in range(ncores):
                 ntrees_this_core = ntrees[icore]
-                # print("Working on {0} trees on core = {1}".format(
-                #         ntrees_this_core, icore))
+                print("Working on {0} trees on core = {1}".format(ntrees_this_core, icore))
                 fin_galaxies_per_snap = dict()
                 descendant_fin_per_snap = dict()
                 for snap in snaps:
@@ -1119,57 +1111,42 @@ class MERAXESConverter(tao.Converter):
                         descendant_fin_per_snap[snap] = fin['Snap{0:03d}/Core{1:d}/DescendantIndices'.
                                                             format(snap, icore)]
 
-                tree_fids, tree_counts, tree_offsets, tree_first_snap, ngalaxies_per_snap = self.get_tree_counts_and_offsets(icore)
-                #ngalaxies_per_snap = self.ngalaxies_per_snap(icore)
+                tree_fids, tree_counts, tree_offsets, tree_first_snap, ngalaxies_per_snap = self.get_tree_counts_and_offset(icore)
                 converted_ngalaxies_per_snap = np.zeros(max(snaps) + 1, dtype=np.int64)
-                vertical_tree_sizes = dict()
-                vertical_tree_offsets = dict()
-                tree_ngalaxies = dict()
-                for forest in tqdm(tree_fids):
-                    ngalaxies = np.zeros(max(snaps) + 1, dtype=np.int64)
-                    offsets = np.zeros(max(snaps) + 1, dtype=np.int64)
-                    first_snap = tree_first_snap[forest]
-                    good_snaps = np.arange(first_snap, snaps[0] + 1)
-                    for snap in good_snaps:
-                        this_snap_counts = tree_counts[snap]
-                        this_snap_offsets = tree_offsets[snap]
-                        try:
-                            ngalaxies[snap] = this_snap_counts[forest]
-                            offsets[snap] = this_snap_offsets[forest]
-                        except KeyError:
-                            print("Warning: This forest (forestid = {0}) is "
-                                  "skipping snapshot = {1} on core {2}".
-                                  format(forest, snap, icore))
-                            continue
+
+                nforests = len(tree_fids)
+
+                # trange is shortcut for tqdm( [x]range(length))
+                for iforest in trange(nforests, total=nforests):
+                    forest = tree_fids[iforest]
                     
-                    vertical_tree_sizes[forest] = ngalaxies.sum()
-                    if vertical_tree_sizes[forest] == 0:
-                        msg = "Number of galaxies in tree = {0} is 0. Bug in "\
-                            "code".format(vertical_tree_sizes[forest])
+                    # number of galaxies per snapshot for this forest
+                    ngalaxies = tree_counts[iforest]
+
+                    # array offset per snapshot for this forest within the
+                    # hdf5 dataset
+                    offsets = tree_offsets[iforest]
+
+                    # total number of galaxies in the forest
+                    # (the sum is over snapshots)
+                    tree_size = ngalaxies.sum()
+                    if tree_size == 0:
+                        msg = "Number of galaxies in forest # {0} with "\
+                            "ForestID = {1} is 0. Bug in code"\
+                            .format(iforest, forest)
                         print(msg)
                         Tracer()()
-                        
-                    vertical_tree_offsets[forest] = offsets
-                    tree_ngalaxies[forest] = ngalaxies
-
-                # print("icore = {0}; ntrees = {1} ".format(icore, ntrees_this_core))
-                # print("tree_fids = {0}".format(tree_fids))
-                # tree_offsets_per_snap = np.zeros(max(snaps)+1,dtype=np.int64)
-                for forest in tqdm(tree_fids):
-
-                    tree_size = vertical_tree_sizes[forest]
-                    offsets = vertical_tree_offsets[forest]
                     
                     # print("Working on forest = {0} on core = {1}. Tree size = {2}".format(forest, icore, tree_size))
                     tree = np.empty(tree_size, dtype=src_type)
                     
                     offs = 0
-                    first_snap = tree_first_snap[forest]
+                    first_snap = tree_first_snap[iforest]
                     good_snaps = np.arange(snaps[0], first_snap-1, -1)
                     ngalaxies_future_snap = 0
                     future_snap = -1
                     for snap in good_snaps:
-                        ngalaxies_this_snap = (tree_ngalaxies[forest])[snap]
+                        ngalaxies_this_snap = tree_counts[iforest, snap]
                         if ngalaxies_this_snap == 0:
                             continue
                         
@@ -1178,7 +1155,7 @@ class MERAXESConverter(tao.Converter):
                         # print("Reading from 'Snap{0:03d}/Core{1:d}/Galaxies' ngalaxies_this_snap = {2}".
                         #       format(snap, icore, ngalaxies_this_snap))
                         galaxies = fin_galaxies_per_snap[snap]
-                        start_offset = (vertical_tree_offsets[forest])[snap]
+                        start_offset = tree_offsets[iforest, snap] #(vertical_tree_offsets[forest])[snap]
                         #print("snap = {3} forest = {0} ngalaxies = {2} start_offset = {1}".format(forest, start_offset, ngalaxies_this_snap, snap))
                         source_sel = np.s_[start_offset: start_offset + ngalaxies_this_snap]
                         dest_sel = np.s_[offs:offs + ngalaxies_this_snap]
@@ -1186,14 +1163,14 @@ class MERAXESConverter(tao.Converter):
                         if snap != max(good_snaps):
                             descendants = descendant_fin_per_snap[snap]
                             descs = descendants[source_sel]
+                            
+                            # Fix the descendant offset
+                            descs[descs > -1] += (offs - prev_offset -
+                                                  ngalaxies_future_snap)
                         else:
                             descs = np.empty(ngalaxies_this_snap, dtype=np.int32)
                             descs[:] = -1
 
-                        # Fix the descendant offset
-                        if snap != max(good_snaps):
-                            descs[descs > -1] += (offs - prev_offset -
-                                                  ngalaxies_future_snap)
                         
                         if len(gal_data) != ngalaxies_this_snap:
                             Tracer()()
@@ -1208,7 +1185,7 @@ class MERAXESConverter(tao.Converter):
 
                         this_centrals = tree['CentralGal'][dest_sel]
                         centralgalind = (np.where(this_centrals >= 0))[0]
-                        prev_offset = tree_offsets[snap][forest]
+                        prev_offset = tree_offsets[iforest, snap]
                         if len(centralgalind) > 0:
                             min_this_centrals = min(this_centrals[centralgalind])
                             if (min_this_centrals + offs - prev_offset) < 0:
@@ -1314,10 +1291,11 @@ class MERAXESConverter(tao.Converter):
                             continue
                         
                         else:
-                           ind = (np.where((tree['snapnum'] > gal['snapnum']) &
+                            
+                            ind = (np.where((tree['snapnum'] > gal['snapnum']) &
                                            (tree['ID'] == gid)))[0]
-                           if len(ind) > 0:
-                               msg = 'Error: Galaxy with ID = {0} '\
+                            if len(ind) > 0:
+                                msg = 'Error: Galaxy with ID = {0} '\
                                      'at snapshot = {1} has descendant ID = '\
                                      '{2} (which is different) but this galaxy '\
                                      'exists at future snapshots. Num Tree matches '\
@@ -1326,12 +1304,14 @@ class MERAXESConverter(tao.Converter):
                                                        tree['ID'][d], len(ind),
                                                        tree['snapnum'][ind],
                                                        tree['ID'][ind])
-                               Tracer()()
-                               raise tao.ConversionError(msg)
-                           gal['mergeIntoID'] = tree['ID'][d]
-                           gal['mergeIntoSnapNum'] = future_snap
-                           gal['mergetype'] = 2
-
+                                Tracer()()
+                                raise tao.ConversionError(msg)
+                            
+                            gal['mergeIntoID'] = tree['ID'][d]
+                            gal['mergeIntoSnapNum'] = tree['snapnum'][d]
+                            gal['mergetype'] = 2
+                    
+                    
                     # Populate the field with galaxy ages (required by TAO SED module) 
                     tree['dT'] = dt_values[tree['snapnum']]
 
@@ -1382,5 +1362,3 @@ class MERAXESConverter(tao.Converter):
                     raise tao.ConversionError(msg)
                     
                         
-
-                    
