@@ -1,13 +1,7 @@
-"""Convert SAGE output to TAO.
+"""Convert DARK SAGE output to TAO.
 
-A control script to be used with `taoconvert` to convert SAGE output
+A control script to be used with `taoconvert` to convert DARK SAGE output
 binary data into HDF5 input for TAO.
-
-To run me on g2 for Mini-Millennium:
-tao/scripts/taoconvert -s examples/darksage.py --trees-dir=../DarkSage/Sept16/output/results/millennium_mini/ --parameters=../DarkSage/Sept16/input/millennium_mini.par  --box-size=62.5 --a-list=/lustre/projects/p014_swin/raw_data/millennium/mini/millennium.a_list -o ../DarkSage/Sept16/output/results/millennium_mini/tao --sim-name="Mini-Millennium" --model-name="Dark Sage"
-
-For full Millennium
-tao/scripts/taoconvert -s examples/darksage.py --trees-dir=../DarkSage/Sept16/output/results/millennium/ --parameters=../DarkSage/Sept16/input/millennium.par  --box-size=500 --a-list=/lustre/projects/p014_swin/raw_data/millennium/full/millennium.a_list -o ../DarkSage/Sept16/output/results/millennium/tao --sim-name="Millennium" --model-name="Dark Sage"
 
 """
 
