@@ -129,8 +129,8 @@ mapping, basic mappings, complex mappings, and direct mappings.
 
 A basic mapping specifies
 what is essentially a renaming of the input data fields to match the
-TAO fields. For example, TAO requiers position to be given as three
-different fields named `position_x`, `position_y`, and `position_z`. If
+TAO fields. For example, TAO requires position to be given as three
+different fields named `posx`, `posy`, and `posz`. If
 the source data stores positions as `x`, `y`, and `z` then they can use
 a basic mapping to change to the correct name. Basic mappings may be
 specified by instantiating a `tao.Mapping` class and providing a dictionary
@@ -138,9 +138,9 @@ of mapped values, like this:
 
 ```python
 mapping = tao.Mapping({
-  'position_x': 'x',
-  'position_y': 'y',
-  'position_z': 'z',
+  'posx': 'x',
+  'posy': 'y',
+  'posz': 'z',
 })
 ```
 
@@ -156,13 +156,13 @@ position mappings discussed above:
 
 ```python
 class MyMapping(tao.Mapping):
-  def map_position_x(tree):
+  def map_posx(tree):
     x = tree['x']
     return x/h
-  def map_position_y(tree):
+  def map_posy(tree):
     y = tree['y']
     return y/h
-  def map_position_z(tree):
+  def map_posz(tree):
     z = tree['z']
     return z/h
 
@@ -219,9 +219,9 @@ binary files could be implemented as:
 ```python
 def iterate_trees(args):
   dtype = np.dtype([
-    ('position_x', 'f'),
-    ('position_y', 'f'),
-    ('position_z', 'f'),
+    ('posx', 'f'),
+    ('posy', 'f'),
+    ('posz', 'f'),
     ('descendant', 'i'),
   ])
   yield np.fromfile('tree_0.dat', dtype)
