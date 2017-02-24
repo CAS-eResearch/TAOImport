@@ -207,12 +207,19 @@ class Converter(object):
 
         # Write the xml file (only on rank=0 for MPI jobs)
         outfilename = self.args.output + '-settings.xml'
-        if (not self.MPI) or (self.MPI and self.MPI.COMM_WORLD.rank == 0):
+        rank = None
+        comm = None
+        if self.MPI is not None:
+            comm = self.MPI.COMM_WORLD
+            rank = comm.rank
+            
+        root_process = (not self.MPI) or (rank == 0)
+        if root_process:
             with open(outfilename, 'w') as f:
                 f.write(get_settings_xml(self.galaxy_type, redshifts,
                                          self.metadata))
             
-        outfilename = self.generate_hdf5_filename()
+        outfilename = self.generate_hdf5_filename(rank)
         with Exporter(outfilename, self) as exp:
             exp.set_cosmology(sim['hubble'], sim['omega_m'], sim['omega_l'])
             exp.set_box_size(sim['box_size'])
@@ -223,13 +230,11 @@ class Converter(object):
         # If this is an MPI job, then the globalindex/globaldescendants have
         # to be fixed (those indices *must* be unique across all files)
         if self.MPI is not None:
-            self.finalize()
+            self.finalize_hdf5()
                 
-    def generate_hdf5_filename(self):
+    def generate_hdf5_filename(self, rank=None):
         outfilename = self.args.output
-        if self.MPI is not None:
-            comm = self.MPI.COMM_WORLD
-            rank = comm.rank
+        if rank is not None:
             if outfilename[-1] != '_':
                 outfilename += '_'
 
@@ -238,7 +243,7 @@ class Converter(object):
         outfilename += '.h5'
         return outfilename
 
-    def finalize(self):
+    def finalize_hdf5(self):
 
         if self.MPI is None:
             return
@@ -253,63 +258,106 @@ class Converter(object):
         ncores = comm.size
         
         import h5py
-        outfilename = self.generate_hdf5_filename()
+        outfilename = self.generate_hdf5_filename(rank)
         with h5py.File(outfilename, 'r') as hf:
             gal = hf['galaxies']
-            print("On rank = {0} gal.shape = {1}".format(rank, gal.shape))
             ngalaxies_this_core = np.array(gal.shape[0], dtype=np.int64)
-            print("On rank = {0} ngalaxies = {1}"
-                  .format(rank, ngalaxies_this_core))
 
         comm.Barrier()
         offset = np.int(0)
         recvbuf = np.zeros(ncores, dtype=np.int64)
         comm.Allgather([ngalaxies_this_core, MPI.INT64_T],
                        [recvbuf, MPI.INT64_T])
-        print("recvbuf = {0} on rank = {1}. after receive"
-              .format(recvbuf, rank))
         recvbuf = recvbuf.cumsum()
 
         if rank == 0:
-            print("recvbuf = {0} on rank = {1} after cumsum".format(recvbuf, rank))
             offset = 0
         else:
             offset = recvbuf[rank-1]
         
 
-        print("offset = {0} on rank = {1} file = {2}"
-              .format(offset, rank, outfilename))
-        with h5py.File(outfilename, 'a') as hf:
-            galaxies = hf['galaxies']
-        
-            for mod in self.modules:
-                for generator in mod.generators:
-                    if hasattr(generator, 'fields'):
-                        
-                        # field is a tuple with name and dtype
-                        for f, _  in generator.fields:
-                        
-                            # Probably should also check that the field is
-                            # of integer type
-                            if 'global' in f.lower():
-                                try:
-                                    print("Before offsetting `field' {0} "
-                                          " on rank = {1}: val = {2}"
-                                          .format(f, rank, galaxies[f][0]))
+        # print("offset = {0} on rank = {1} file = {2}"
+        #       .format(offset, rank, outfilename))
 
-                                    ind = galaxies[f][:] < 0
-                                    galaxies[f] += offset
-                                    galaxies[f][ind] = -1
-                                    
-                                    print("After offsetting `field' {0} "
-                                          " on rank = {1} : val = {2} (offset = {3})"
-                                          .format(f, rank, galaxies[f][0], offset))
+        # what are the fields that are 'global' ?
+        # Essentially, these fields should be unique across
+        # all files. Currently, these fields are only unique
+        # across the local file (corresponding to the rank)
+        # By adding the offset (== number of galaxies written upto
+        # this local file), we can make all of the 'global' fields
+        # unique across all files.
+        globalfields = []
+        for mod in self.modules:
+            for generator in mod.generators:
+                if hasattr(generator, 'fields'):
 
+                    # field is a tuple with name and dtype
+                    for f, _  in generator.fields:
 
-                                except:
-                                    raise
+                        # Probably should also check that the field is
+                        # of integer type
+                        if 'global' in f.lower() and f not in globalfields:
+                            globalfields.append(f)
+
+        # Check that globalfields is unique, otherwise the offset
+        # will be applied twice.
+        unique_len = len(set(globalfields))
+        if unique_len != len(globalfields):
+            msg = 'Error: Found duplicate fields while applying offsets '\
+                'in globalfields. Unique items = {0} globalfields = {1}.'\
+                .format(set(globalfields), globalfields)
+            msg += '\nEasiest fix is to replace globalfields list in '\
+                '`TAOImport/tao/Converter.py` with `list(set(globalfields))`'
             
+            raise AssertionError(msg)
 
+        # Now fix the global* indices 
+        if rank > 0:
+            with h5py.File(outfilename, 'a') as hf:
+                galaxies = hf['galaxies']
+                for f in globalfields:
+                    try:
+                        # print("Before offsetting `field' {0} "
+                        #       " on rank = {1}: val = {2}"
+                        #       .format(f, rank, galaxies[f][0]))
+
+                        val = galaxies[f][:]
+                        val[val >= 0] += offset
+                        galaxies[f] = val
+
+                        # print("After offsetting `field' {0} "
+                        #       " on rank = {1} : val = {2} (offset = {3})"
+                        #       .format(f, rank, galaxies[f][0], offset))
+
+
+                    except:
+                        raise
+            
+            # Only the non-root processes have to fix the offsets
+            # and once the MPI processes have fixed those indices,
+            # their job is done
+            if rank > 0:
+                return
+
+
+        # Now let's create a hdf5 master file that will hold sym-links to the
+        # individual hdf5 files created by the MPI processes. Only done on the
+        # root processor.
+        assert rank == 0
+        
+        # Not specifying the rank -> generating the master filename
+        outfilename = self.generate_hdf5_filename() 
+
+        with h5py.File(outfilename, 'w') as hf:
+            hf.attrs['nfiles'] = ncores
+            alloutputfiles = []
+            for rank in xrange(ncores):
+                alloutputfiles.append(self.generate_hdf5_filename(rank))
+
+            hf.attrs['filenames'] = alloutputfiles
+        
+        return
+        
     def convert_tree(self, src_tree):
         tstart = time.time()
         dst_tree = np.empty_like(src_tree,

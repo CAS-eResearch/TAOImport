@@ -15,12 +15,6 @@ class Exporter(object):
         if filename[-3:] != '.h5':
             filename += '.h5'
 
-        if converter.MPI is not None:
-            comm = converter.MPI.COMM_WORLD
-            rank = comm.rank
-            ncores = comm.size
-            print "hdf5 file = {0} rank = {1} ncores = {2}"\
-                .format(filename, rank, ncores)
         self.open_file(filename)
 
     def open_file(self, filename):

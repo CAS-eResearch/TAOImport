@@ -579,8 +579,8 @@ class SAGEConverter(tao.Converter):
             msg = "Could not parse any redshift values in file {0}"\
                 .format(self.args.a_list)
             raise tao.ConversionError(msg)
-        print("Found {0} redshifts in file {1}".format(len(redshifts),
-                                                       self.args.a_list))
+        # print("Found {0} redshifts in file {1}".format(len(redshifts),
+        #                                                self.args.a_list))
         return redshifts
 
     def get_mapping_table(self):

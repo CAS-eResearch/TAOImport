@@ -12,7 +12,7 @@ except ImportError:
     
 if __name__ == '__main__':
 
-    # Create the base argumentp arser.
+    # Create the base argument parser.
     parser = argparse.ArgumentParser(description='Convert semi-analytic data into TAO format')
     parser.add_argument('-s', '--script', default='taoconv.py', help='script defining conversion (default: taoconv.py)')
     parser.add_argument('-o', '--output', default='output', help='output name')
@@ -58,6 +58,7 @@ if __name__ == '__main__':
     # Now we can parse command line arguments.
     args = parser.parse_args()
 
+
     # Now instantiate the modules.
     modules = [m(args) for m in modules]
 
@@ -88,8 +89,11 @@ if __name__ == '__main__':
         print('Unable to find script: "{0}"'.format(script_fn))
         sys.exit(1)
 
+    comm = None
+    rank = None
     if MPI is not None:
         comm = MPI.COMM_WORLD
+        rank = comm.rank
         # print("In taoconvert: got MPI on rank = {0}".format(comm.rank))
         
     converter = converter_cls(modules, args)
@@ -97,3 +101,24 @@ if __name__ == '__main__':
     #       .format(comm.rank))
     converter.MPI = MPI
     converter.convert()
+
+    if comm is not None:
+        comm.Barrier()
+        converter.MPI.Finalize()
+
+        
+    if rank is None or rank == 0:
+        outfilename = converter.generate_hdf5_filename()
+        import h5py
+        from collections import OrderedDict
+        with h5py.File(outfilename, 'r+') as hf:
+            cmdline_args = OrderedDict(vars(args))
+            print("cmdline_args = {0}".format(cmdline_args))
+            for k,v in cmdline_args.items():
+                if v is not None:
+                    hf.attrs[str(k)] = v
+
+        print("Finished")
+    
+
+
