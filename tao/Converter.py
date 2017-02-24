@@ -18,6 +18,7 @@ class Converter(object):
     def __init__(self, modules, args):
         self.modules = modules
         self.args = args
+        self.MPI = None
         table = self.get_mapping_table()
         fields = self.get_extra_fields()
         self.mapping = Mapping(self, table, fields)
@@ -196,16 +197,98 @@ class Converter(object):
 
         library['model-name'] = self.args.model_name
 
+        # Is this an MPI job?
+        MPI = None
+        rank = None
+        try:
+            from mpi4py import MPI
+            comm = MPI.COMM_WORLD
+            rank = comm.get_rank()
+        except:
+            MPI = None
+            pass
+
+        self.MPI = MPI
+
+        # Write the xml file (only on rank=0 for MPI jobs)
         outfilename = self.args.output + '-settings.xml'
-        with open(outfilename, 'w') as f:
-            f.write(get_settings_xml(self.galaxy_type, redshifts,
-                                     self.metadata))
-        with Exporter(self.args.output, self) as exp:
+        if (not self.MPI) or (self.MPI and rank == 0):
+            with open(outfilename, 'w') as f:
+                f.write(get_settings_xml(self.galaxy_type, redshifts,
+                                         self.metadata))
+            
+        outfilename = self.generate_hdf5_filename()
+        with Exporter(outfilename, self) as exp:
             exp.set_cosmology(sim['hubble'], sim['omega_m'], sim['omega_l'])
             exp.set_box_size(sim['box_size'])
             exp.set_redshifts(redshifts)
             for tree in self.iterate_trees():
                 exp.add_tree(tree)
+
+        # If this is an MPI job, then the globalindex/globaldescendants have
+        # to be fixed (those indices *must* be unique across all files)
+        if self.MPI is not None:
+            self.MPI.comm.Barrier()
+            self.finalize()
+                
+    def generate_hdf5_filename(self):
+        outfilename = self.args.output
+        if self.MPI is not None:
+            comm = self.MPI.COMM_WORLD
+            rank = comm.rank
+            if outfilename[-1] != '_':
+                outfilename += '_'
+
+            outfilename += '{0:d}'.format(rank)
+
+        outfilename += '.h5'
+        return outfilename
+
+    def finalize(self):
+
+        if self.MPI is None:
+            return
+        
+        # Was an MPI task -> need to compute the unique
+        # globalindex across *all* files
+        comm = self.MPI.COMM_WORLD
+        rank = comm.rank
+        ncores = comm.size
+        
+        outfilename = self.generate_hdf5_filename()
+        ngalaxies_per_core = np.zeros(ncores, dtype=np.int64)
+        with h5py.File(outfilename, 'a') as hf:
+            gal = hf['galaxies']
+            ngalaxies_per_core[rank] = gal.shape[0]
+            print("On rank = {0} ngalaxies = {1}".format(rank, ngalaxies_per_core[rank]))
+            
+        recvbuf = np.empty(comm.size, np.int64)
+        comm.Allgather([self.ngalaxies_on_core, np.int64],
+                       [recvbuf, np.int64])
+        recvbuf.cumsum()
+
+        # MS: Since I am always worried about numpy broadcasting
+        # Making sure that offset is a scalar.
+        offset = (recvbuf[rank])[0]
+
+        for mod in self.modules:
+            for generator in mod.generators:
+                if hasattr(generator, 'fields'):
+                    
+                    # field is a tuple with name and dtype
+                    for f, _  in generator.fields:
+                        
+                        # Probably should also check that the field is
+                        # of integer type
+                        if 'global' in f.lower():
+                            try:
+                                self.galaxies[f] += offset
+                                print("Added an offset = {0} to the field `{1}'"
+                                      " on rank = {2} and filename = {3}"
+                                      .format(offset, f, rank, self.file.filename))
+                            except:
+                                raise
+            
 
     def convert_tree(self, src_tree):
         tstart = time.time()
@@ -227,6 +310,7 @@ class Converter(object):
         val_time = time.time() - t0
 
         t0 = time.time()
+
         # Now perform generation.
         for mod in self.modules:
             mod.generate_fields(fields)

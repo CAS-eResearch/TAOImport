@@ -11,7 +11,11 @@ class Exporter(object):
     def __init__(self, filename, converter):
         self.converter = converter
         self.chunk_size = 10000
-        self.open_file(filename + '.h5')
+
+        if filename[-3:] != '.h5':
+            filename += '.h5'
+        
+        self.open_file(filename)
 
     def open_file(self, filename):
         self.file = h5py.File(filename, 'w')
@@ -26,11 +30,13 @@ class Exporter(object):
             maxshape=(None,)
         )
         self.tree_displs[0] = 0
+
         self.galaxies = self.file.create_dataset(
             'galaxies', (0,), dtype=self.converter.galaxy_type,
             chunks=(self.chunk_size,),
             maxshape=(None,)
         )
+
         self.redshifts = self.file.create_dataset(
             'snapshot_redshifts', (0,), dtype='f',
             chunks=(100,),
@@ -49,6 +55,7 @@ class Exporter(object):
         return self
 
     def __exit__(self, type, value, traceback):
+
         self.file.close()
 
     def add_tree(self, tree):

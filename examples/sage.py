@@ -3,7 +3,7 @@
 A control script to be used with `taoconvert` to convert SAGE output
 binary data into HDF5 input for TAO.
 """
-
+from __future__ import division, print_function
 import re, os
 import numpy as np
 import tao
@@ -755,6 +755,53 @@ class SAGEConverter(tao.Converter):
         """Convert SAGE dT values to Gyrs"""
         return tree['dT'] * 1e-3
 
+    def map_tree_files_to_cores(self, group_strings):
+        """
+        Splits up the input tree files across cores (for MPI jobs)
+        Otherwise, simply returns the input array of `group_strings`
+        (group_strings are the core that SAGE processed the corresponding
+        input tree file on)
+
+        
+        Returns: numpy array of file numbers that this core needs to process
+
+        """
+        if self.MPI is None:
+            return  np.array(group_strings, dtype=np.int64)
+        
+        comm = self.MPI.COMM_WORLD
+        rank = comm.rank
+        ncores = comm.size
+
+        # Easiest way to split is simply to divide the files over the cores
+        nfiles = len(group_strings)
+        nfiles_per_core = nfiles // ncores
+        rem = nfiles % ncores
+        nfiles_assigned=0
+        for icore in xrange(ncores):
+            nfiles_this_core = nfiles_per_core
+            if rem > 0:
+                nfiles_this_core++
+                rem--
+
+            if icore == rank:
+                group_nums_this_core = np.arange(nfiles_assigned,
+                                                 nfiles_assigned + nfiles_this_core,
+                                                 step=1,
+                                                 dtype=np.int64)
+
+            # Once icore == rank has been triggered, the following line
+            # does not have any impact on the return value. However,
+            # this line serves as a check that the logic is correct
+            nfiles_assigned += nfiles_this_core
+
+        assert nfiles == nfiles_assigned
+        assert rem == 0
+
+        return group_nums_this_core
+        
+
+    
     def iterate_trees(self):
         """Iterate over SAGE trees."""
 
@@ -847,15 +894,19 @@ class SAGEConverter(tao.Converter):
         for group in group_strings:
             # redshift array is sorted -> pick the last redshift
             redshift = redshift_strings[-1]
-            fn = 'model_z%s_%s' % (redshift, group)
+            fn = 'model_z{0}_{1}'.format(redshift, group)
             with open(os.path.join(self.args.trees_dir, fn), 'rb') as f:
                 n_trees = np.fromfile(f, np.uint32, 1)[0]
                 totntrees += n_trees
 
-        for group in group_strings:
+
+        # If this is an MPI job, divide up the tasks
+        group_nums_this_core = self.map_tree_files_to_cores(group_strings)
+        
+        for group in group_nums_this_core:
             files = []
             for redshift in redshift_strings:
-                fn = 'model_z%s_%s' % (redshift, group)
+                fn = 'model_z{0}_{1}'.format(redshift, group)
                 files.append(open(os.path.join(self.args.trees_dir, fn), 'rb'))
 
             n_trees = [np.fromfile(f, np.uint32, 1)[0] for f in files][0]
