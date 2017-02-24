@@ -781,8 +781,8 @@ class SAGEConverter(tao.Converter):
         for icore in xrange(ncores):
             nfiles_this_core = nfiles_per_core
             if rem > 0:
-                nfiles_this_core++
-                rem--
+                nfiles_this_core += 1
+                rem -=1
 
             if icore == rank:
                 group_nums_this_core = np.arange(nfiles_assigned,
@@ -902,6 +902,8 @@ class SAGEConverter(tao.Converter):
 
         # If this is an MPI job, divide up the tasks
         group_nums_this_core = self.map_tree_files_to_cores(group_strings)
+        root_process = self.MPI is None or \
+            (self.MPI is not None and self.MPI.COMM_WORLD.rank == 0)
         
         for group in group_nums_this_core:
             files = []
@@ -916,7 +918,8 @@ class SAGEConverter(tao.Converter):
             print("Working on ntrees = {0} in group = {1}".format(n_trees,
                                                                   group))
 
-            for ii in tqdm(xrange(n_trees)):
+            pbar = lambda x : tqdm(x) if root_process else x
+            for ii in pbar(xrange(n_trees)):
                 tree_size = tree_sizes[ii]
                 tree = np.empty(tree_size, dtype=src_type)
                 offs = 0

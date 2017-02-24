@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import time
 from .library import library
@@ -136,40 +137,47 @@ class Converter(object):
         redshifts = self.get_snapshot_redshifts()
 
         if sim is None:
-            print '\n'.join([
-                'No simulation information has been specified in your conversion script. ',
-                'Please add a dictionary of simulation information composed of the Hubble ',
-                'constant, OmegaM, OmegaL, and the box size.'
-            ])
+            msg = '\n'.join([
+                    'No simulation information has been specified in your conversion script. ',
+                    'Please add a dictionary of simulation information composed of the Hubble ',
+                    'constant, OmegaM, OmegaL, and the box size.'
+                    ])
+            print(msg)
             sys.exit(1)
+            
         if 'hubble' not in sim:
-            print '\n'.join([
-                'No Hubble value found in simulation data.'
-            ])
+            msg = '\n'.join([
+                    'No Hubble value found in simulation data.'
+                    ])
+            print(msg)
             sys.exit(1)
         if 'omega_m' not in sim:
-            print '\n'.join([
-                'No OmegaM value found in simulation data.'
-            ])
+            msg = '\n'.join([
+                    'No OmegaM value found in simulation data.'
+                    ])
+            print(msg)
             sys.exit(1)
+            
         if 'omega_l' not in sim:
-            print '\n'.join([
-                'No OmegaL value found in simulation data.'
-            ])
+            msg = '\n'.join([
+                    'No OmegaL value found in simulation data.'
+                    ])
+            print(msg)
             sys.exit(1)
         if 'box_size' not in sim:
-            print '\n'.join([
-                'No box size value found in simulation data.'
-            ])
+            msg = '\n'.join([
+                    'No box size value found in simulation data.'
+                    ])
+            print(msg)
             sys.exit(1)
 
         if redshifts is None:
-            print '\n'.join([
-                'No snapshot redshift data found.',
-            ])
+            msg = '\n'.join([
+                    'No snapshot redshift data found.',
+                    ])
+            print(msg)
             sys.exit(1)
 
-        
         library['dataset-version'] = datetime.today().strftime("%Y-%m-%d")
 
         # argparse changes '-' to '_'. Hence, the field is
@@ -197,22 +205,9 @@ class Converter(object):
 
         library['model-name'] = self.args.model_name
 
-        # Is this an MPI job?
-        MPI = None
-        rank = None
-        try:
-            from mpi4py import MPI
-            comm = MPI.COMM_WORLD
-            rank = comm.get_rank()
-        except:
-            MPI = None
-            pass
-
-        self.MPI = MPI
-
         # Write the xml file (only on rank=0 for MPI jobs)
         outfilename = self.args.output + '-settings.xml'
-        if (not self.MPI) or (self.MPI and rank == 0):
+        if (not self.MPI) or (self.MPI and self.MPI.COMM_WORLD.rank == 0):
             with open(outfilename, 'w') as f:
                 f.write(get_settings_xml(self.galaxy_type, redshifts,
                                          self.metadata))
@@ -228,7 +223,6 @@ class Converter(object):
         # If this is an MPI job, then the globalindex/globaldescendants have
         # to be fixed (those indices *must* be unique across all files)
         if self.MPI is not None:
-            self.MPI.comm.Barrier()
             self.finalize()
                 
     def generate_hdf5_filename(self):
@@ -248,46 +242,72 @@ class Converter(object):
 
         if self.MPI is None:
             return
-        
+
         # Was an MPI task -> need to compute the unique
         # globalindex across *all* files
-        comm = self.MPI.COMM_WORLD
+
+        MPI = self.MPI
+        comm = MPI.COMM_WORLD
+        comm.Barrier()
         rank = comm.rank
         ncores = comm.size
         
+        import h5py
         outfilename = self.generate_hdf5_filename()
-        ngalaxies_per_core = np.zeros(ncores, dtype=np.int64)
-        with h5py.File(outfilename, 'a') as hf:
+        with h5py.File(outfilename, 'r') as hf:
             gal = hf['galaxies']
-            ngalaxies_per_core[rank] = gal.shape[0]
-            print("On rank = {0} ngalaxies = {1}".format(rank, ngalaxies_per_core[rank]))
-            
-        recvbuf = np.empty(comm.size, np.int64)
-        comm.Allgather([self.ngalaxies_on_core, np.int64],
-                       [recvbuf, np.int64])
-        recvbuf.cumsum()
+            print("On rank = {0} gal.shape = {1}".format(rank, gal.shape))
+            ngalaxies_this_core = np.array(gal.shape[0], dtype=np.int64)
+            print("On rank = {0} ngalaxies = {1}"
+                  .format(rank, ngalaxies_this_core))
 
-        # MS: Since I am always worried about numpy broadcasting
-        # Making sure that offset is a scalar.
-        offset = (recvbuf[rank])[0]
+        comm.Barrier()
+        offset = np.int(0)
+        recvbuf = np.zeros(ncores, dtype=np.int64)
+        comm.Allgather([ngalaxies_this_core, MPI.INT64_T],
+                       [recvbuf, MPI.INT64_T])
+        print("recvbuf = {0} on rank = {1}. after receive"
+              .format(recvbuf, rank))
+        recvbuf = recvbuf.cumsum()
 
-        for mod in self.modules:
-            for generator in mod.generators:
-                if hasattr(generator, 'fields'):
-                    
-                    # field is a tuple with name and dtype
-                    for f, _  in generator.fields:
+        if rank == 0:
+            print("recvbuf = {0} on rank = {1} after cumsum".format(recvbuf, rank))
+            offset = 0
+        else:
+            offset = recvbuf[rank-1]
+        
+
+        print("offset = {0} on rank = {1} file = {2}"
+              .format(offset, rank, outfilename))
+        with h5py.File(outfilename, 'a') as hf:
+            galaxies = hf['galaxies']
+        
+            for mod in self.modules:
+                for generator in mod.generators:
+                    if hasattr(generator, 'fields'):
                         
-                        # Probably should also check that the field is
-                        # of integer type
-                        if 'global' in f.lower():
-                            try:
-                                self.galaxies[f] += offset
-                                print("Added an offset = {0} to the field `{1}'"
-                                      " on rank = {2} and filename = {3}"
-                                      .format(offset, f, rank, self.file.filename))
-                            except:
-                                raise
+                        # field is a tuple with name and dtype
+                        for f, _  in generator.fields:
+                        
+                            # Probably should also check that the field is
+                            # of integer type
+                            if 'global' in f.lower():
+                                try:
+                                    print("Before offsetting `field' {0} "
+                                          " on rank = {1}: val = {2}"
+                                          .format(f, rank, galaxies[f][0]))
+
+                                    ind = galaxies[f][:] < 0
+                                    galaxies[f] += offset
+                                    galaxies[f][ind] = -1
+                                    
+                                    print("After offsetting `field' {0} "
+                                          " on rank = {1} : val = {2} (offset = {3})"
+                                          .format(f, rank, galaxies[f][0], offset))
+
+
+                                except:
+                                    raise
             
 
     def convert_tree(self, src_tree):
@@ -348,14 +368,10 @@ class Converter(object):
         return dst_tree
 
     def _merge_fields(self, fields, dst_tree):
-        # print "fields in _merge_fields = {0}".format(fields)
         for name, values in fields.iteritems():
             x = dst_tree[name]
             x[:] = values
 
     def _transfer_fields(self, src_tree, dst_tree):
-        # print "fields in _transfer_fields = {0} ".format(self.mapping.fields)
-        # print "src_tree.dtype = {0}".format(src_tree.dtype)
-        # print "dst_tree.dtype = {0}".format(dst_tree.dtype)
         for field, _ in self.mapping.fields.iteritems():
             dst_tree[field] = src_tree[field]

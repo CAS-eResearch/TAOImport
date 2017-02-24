@@ -14,10 +14,17 @@ class Exporter(object):
 
         if filename[-3:] != '.h5':
             filename += '.h5'
-        
+
+        if converter.MPI is not None:
+            comm = converter.MPI.COMM_WORLD
+            rank = comm.rank
+            ncores = comm.size
+            print "hdf5 file = {0} rank = {1} ncores = {2}"\
+                .format(filename, rank, ncores)
         self.open_file(filename)
 
     def open_file(self, filename):
+        
         self.file = h5py.File(filename, 'w')
         self.tree_counts = self.file.create_dataset(
             'tree_counts', (0,), dtype='uint32',

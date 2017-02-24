@@ -1,10 +1,15 @@
 #!/usr/bin/env python
-
+from __future__ import print_function
 import argparse, os, sys, pprint, imp, inspect
 import numpy as np, tao
 from tao.find_modules import find_modules
 from tao import Converter
 
+try:
+    from mpi4py import MPI
+except ImportError:
+    MPI = None
+    
 if __name__ == '__main__':
 
     # Create the base argumentp arser.
@@ -46,7 +51,7 @@ if __name__ == '__main__':
                 converter_cls = obj
                 break
         if not converter_cls:
-            print 'Script does not contain a converter.'
+            print('Script does not contain a converter.')
             sys.exit(1)
         converter_cls.add_arguments(parser)
 
@@ -64,7 +69,7 @@ if __name__ == '__main__':
             if args.field in mod.fields:
                 pprint.pprint({args.field: mod.fields[args.field]})
                 sys.exit(0)
-        print 'Unknown field: ' + args.field
+        print('Unknown field: {0}'.format(args.field))
         sys.exit(1)
 
     # Similarly check for information about all fields.
@@ -80,8 +85,15 @@ if __name__ == '__main__':
 
     # Now we can abort if the script is missing.
     if not os.path.exists(script):
-        print 'Unable to find script: "%s"'%script_fn
+        print('Unable to find script: "{0}"'.format(script_fn))
         sys.exit(1)
 
+    if MPI is not None:
+        comm = MPI.COMM_WORLD
+        # print("In taoconvert: got MPI on rank = {0}".format(comm.rank))
+        
     converter = converter_cls(modules, args)
+    # print("In taoconvert: got MPI on rank = {0} - setting on converter object"
+    #       .format(comm.rank))
+    converter.MPI = MPI
     converter.convert()
