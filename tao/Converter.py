@@ -4,7 +4,7 @@ from .library import library
 from .Exporter import Exporter
 from .Mapping import Mapping
 from .xml import get_settings_xml
-# from IPython.core.debugger import Tracer
+from IPython.core.debugger import Tracer
 from collections import OrderedDict
 import os
 
@@ -18,6 +18,47 @@ class Converter(object):
     def __init__(self, modules, args):
         self.modules = modules
         self.args = args
+        dictname = 'src_fields_dict'
+        if hasattr(self, dictname):
+            initial_order = 0
+            src_fields_dict = self.src_fields_dict
+            
+            # Check if there are any arrays that are present
+            for f, d in src_fields_dict.items():
+                try:
+                    shape = d['shape']
+
+                    # This field (referenced by field name "f")
+                    # is an array type. Needs to be replaced by
+                    # "f_{dim}" for each of the dimensions in "shape".
+                    # (For instance, pos[3] will get changed to pos_0,
+                    # pos_1, pos_2)
+
+                    # The print function is fake - it is the regular python2
+                    # print 
+                    print("Fixing array field {0} with shape={2}. Old "
+                          "dictionary = {1}".format(f, d, shape))
+                    src_fields_dict.pop(f)
+                    d['shape']=1
+                    prev_label = d['label']
+                    for axis in range(shape):
+                        new_field_name = '{0}_{1}'.format(f, axis)
+                        try:
+                            d['label'] = '{0} (along {1})'.format(prev_label,
+                                                                  axis)
+                        except KeyError:
+                            d['label'] = new_field_name
+                            
+                        src_fields_dict[new_field_name] = d
+                        print('New dictionary: {0}:{1} (along {2})'.
+                              format(new_field_name, d, axis))
+                    
+                except KeyError:
+                    # No shape - therefore a single ranked array
+                    pass
+            
+        # print("self.src_fields_dict = {0}".format(self.src_fields_dict))
+        
         table = self.get_mapping_table()
         fields = self.get_extra_fields()
         self.mapping = Mapping(self, table, fields)
@@ -112,13 +153,14 @@ class Converter(object):
             except KeyError:
                 try:
                     new_d = self.src_fields_dict[val.lower()]
-                except:
+                except Exception as e:
+                    print("error {0}".format(e))
                     Tracer()()
 
-            # print "Calling combine keys for mapping table field = {0} val = {1}"\
-            #     .format(key, val)
+            print "Calling combine keys for mapping table field = {0} val = {1}"\
+                .format(key, val)
 
-            # print "old dict = {0}\nnew_dict = {1}".format(old_d, new_d)
+            print "old dict = {0}\nnew_dict = {1}".format(old_d, new_d)
             updated_d = self.combine_and_append_keys(old_d, new_d)
             metadata[lower_case_field] = updated_d
 
@@ -263,15 +305,39 @@ class Converter(object):
 
         return dst_tree
 
+    def copy_array_fields(self, src_tree, dest_tree, fieldname, shape):
+        """
+        Copies fields that are arrays into individual elements
+        per array.
+
+        for example, pos[3] gets copied to pos_0, pos_1, pos_2
+
+        More generally, field[shape] gets copied into
+        field_0, field_1, ..field_(shape-1)
+        """
+
+        if len(src_tree) != len(dest_tree):
+            msg = 'The source and destination arrays must be of the same'\
+                'size. Source size = {0} dest. size = {1}'.format(
+                len(src_tree), len(dest_tree))
+            raise ConversionError(msg)
+        
+        # Get the field
+        for (fld, dst) in zip(src_tree[fieldname], dest_tree):
+            for axis in range(shape[0]):
+                dest_fieldname = '{0}_{1}'.format(fieldname, axis)
+                try:
+                    dst[dest_fieldname] = fld[axis]
+                except:
+                    print()
+                    raise
+        
+
     def _merge_fields(self, fields, dst_tree):
-        # print "fields in _merge_fields = {0}".format(fields)
         for name, values in fields.iteritems():
             x = dst_tree[name]
             x[:] = values
 
     def _transfer_fields(self, src_tree, dst_tree):
-        # print "fields in _transfer_fields = {0} ".format(self.mapping.fields)
-        # print "src_tree.dtype = {0}".format(src_tree.dtype)
-        # print "dst_tree.dtype = {0}".format(dst_tree.dtype)
         for field, _ in self.mapping.fields.iteritems():
             dst_tree[field] = src_tree[field]
