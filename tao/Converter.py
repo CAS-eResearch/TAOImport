@@ -230,8 +230,52 @@ class Converter(object):
         # If this is an MPI job, then the globalindex/globaldescendants have
         # to be fixed (those indices *must* be unique across all files)
         if self.MPI is not None:
-            self.finalize_hdf5()
-                
+            self.finalize_hdf5_parallel_mode()
+
+        # Now write the common headers for both serial and parallel-mode.
+        # (write only on root -- rank = 0 for MPI or the only task in serial)
+        if root_process:
+            self.write_common_hdf5_headers()
+            
+    def write_common_hdf5_headers(self):
+        
+        import h5py
+
+        comm = None
+        ncores = 1
+        if self.MPI is not None:
+            comm = self.MPI.COMM_WORLD
+            ncores = comm.size
+    
+        # Not specifying the rank -> generating the master filename
+        outfilename = self.generate_hdf5_filename() 
+        mode = 'r+' if comm is None else 'w'
+
+        with h5py.File(outfilename, mode) as hf:
+            hf.attrs['nfiles'] = ncores
+            hf.attrs['runtype'] = 'serial' if comm is None else 'parallel'
+            alloutputfiles = []
+            if comm is not None:
+                # in MPI mode, each MPI task has written out its own
+                # converted file.
+                for rank in xrange(ncores):
+                    alloutputfiles.append(self.generate_hdf5_filename(rank))
+            else:
+                # in serial mode -> current file is the
+                # only output file
+                alloutputfiles.append(outfilename)
+                    
+            hf.attrs['filenames'] = alloutputfiles
+
+        outfilename = self.generate_hdf5_filename()
+        import h5py
+
+        with h5py.File(outfilename, 'r+') as hf:
+            cmdline_args = OrderedDict(vars(self.args))
+            for k,v in cmdline_args.items():
+                if v is not None:
+                    hf.attrs[str(k)] = v
+
     def generate_hdf5_filename(self, rank=None):
         outfilename = self.args.output
         if rank is not None:
@@ -243,7 +287,7 @@ class Converter(object):
         outfilename += '.h5'
         return outfilename
 
-    def finalize_hdf5(self):
+    def finalize_hdf5_parallel_mode(self):
 
         if self.MPI is None:
             return
@@ -344,17 +388,6 @@ class Converter(object):
         # individual hdf5 files created by the MPI processes. Only done on the
         # root processor.
         assert rank == 0
-        
-        # Not specifying the rank -> generating the master filename
-        outfilename = self.generate_hdf5_filename() 
-
-        with h5py.File(outfilename, 'w') as hf:
-            hf.attrs['nfiles'] = ncores
-            alloutputfiles = []
-            for rank in xrange(ncores):
-                alloutputfiles.append(self.generate_hdf5_filename(rank))
-
-            hf.attrs['filenames'] = alloutputfiles
         
         return
         
