@@ -3,7 +3,7 @@
 A control script to be used with `taoconvert` to convert SAGE output
 binary data into HDF5 input for TAO.
 """
-from __future__ import division
+from __future__ import division, print_function
 import re, os
 import numpy as np
 import tao
@@ -139,15 +139,15 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'units': "Mpc/h",
                         'order': 14,
                         }),
-                                       ('TotSfr', {
-                                        'type': np.float32,
-                                        'label': "Total Star Formation Rate",
-                                        'description': "Total star formation rate, "
-                                        "(includes both disk and bulge components)",
-                                        'group': "Galaxy Properties",
-                                        'units': "Msun/year",
-                                        'order': 15,
-                                        }),
+                ('TotSfr', {
+                        'type': np.float32,
+                        'label': "Total Star Formation Rate",
+                        'description': "Total star formation rate, "
+                        "(includes both disk and bulge components)",
+                        'group': "Galaxy Properties",
+                        'units': "Msun/year",
+                        'order': 15,
+                        }),
                 ('Cooling', {
                         'type': np.float32,
                         'label': "Hot Gas Cooling Rate",
@@ -438,87 +438,87 @@ class SAGEConverter_MultiDark(tao.Converter):
                     'group': "Simulation",
                     'order': 51,
                     }),
-               ('SfrDisk', {
-                'type': np.float32,
-                'label': "Star Formation Rate in the Disk",
-                'description': "Star formation rate in the disk",
-                'group': "Internal",
-                'units': "Msun/year",
-                'order': -1,
-                }),
-               ('SfrBulge', {
-                'type': np.float32,
-                'label': "Star formation Rate in the Bulge",
-                'description': "Star formation rate in the bulge",
-                'group': "Internal",
-                'units': "Msun/year",
-                'order': -1,
-                }),
-               ('SfrDiskZ', {
-                'type': np.float32,
-                'label': "Avg. Metallicity of Star-forming Disk Gas",
-                'description': "Metallicty of star forming disk gas "\
-                "(averaged over timesteps between two snapshots)"\
-                "(Mass of metals)/(Mass of star forming disk gas)",
-                'group': "Internal",
-                'units': "fraction",
-                'order': -1,
-                }),
-               ('SfrBulgeZ', {
-                'type': np.float32,
-                'label': "Avg. Metallicity of Star-forming Bulge Gas",
-                'description': "Metallicty of star forming bulge gas "\
-                "(averaged over timesteps between two snapshots)"\
-                "(Mass of metals)/(Mass of star forming bulge gas)",
-                'group': "Internal",
-                'units': "fraction",
-                'order': -1,
-                }),
-               ('mergeIntoID', {
-                'type': np.int32,
-                'label': "Descendant Galaxy Index",
-                'description': "Index for the descendant galaxy "\
-                "after a merger",
-                'group': "Internal",
-                'order': -1,
-                }),
+                ('SfrDisk', {
+                        'type': np.float32,
+                        'label': "Star Formation Rate in the Disk",
+                        'description': "Star formation rate in the disk",
+                        'group': "Internal",
+                        'units': "Msun/year",
+                        'order': -1,
+                        }),
+                ('SfrBulge', {
+                        'type': np.float32,
+                        'label': "Star formation Rate in the Bulge",
+                        'description': "Star formation rate in the bulge",
+                        'group': "Internal",
+                        'units': "Msun/year",
+                        'order': -1,
+                        }),
+                ('SfrDiskZ', {
+                        'type': np.float32,
+                        'label': "Avg. Metallicity of Star-forming Disk Gas",
+                        'description': "Metallicty of star forming disk gas "\
+                            "(averaged over timesteps between two snapshots)"\
+                            "(Mass of metals)/(Mass of star forming disk gas)",
+                        'group': "Internal",
+                        'units': "fraction",
+                        'order': -1,
+                        }),
+                ('SfrBulgeZ', {
+                        'type': np.float32,
+                        'label': "Avg. Metallicity of Star-forming Bulge Gas",
+                        'description': "Metallicty of star forming bulge gas "\
+                            "(averaged over timesteps between two snapshots)"\
+                            "(Mass of metals)/(Mass of star forming bulge gas)",
+                        'group': "Internal",
+                        'units': "fraction",
+                        'order': -1,
+                        }),
+                ('mergeIntoID', {
+                        'type': np.int32,
+                        'label': "Descendant Galaxy Index",
+                        'description': "Index for the descendant galaxy "\
+                            "after a merger",
+                        'group': "Internal",
+                        'order': -1,
+                        }),
                ('mergeIntoSnapNum', {
-                'type': np.int32,
-                'label': "Descendant Snapshot",
-                'description': "Snapshot for the descendant galaxy",
-                'group': "Internal",
-                'order': -1,
-                }),
+                        'type': np.int32,
+                        'label': "Descendant Snapshot",
+                        'description': "Snapshot for the descendant galaxy",
+                        'group': "Internal",
+                        'order': -1,
+                        }),
                ('mergeType', {
-                'type': np.int32,
-                'label': "Merger Type",
-                'description': "Merger type: "\
-                "0=none; 1=minor merger; 2=major merger; "\
-                "3=disk instability; 4=disrupt to ICS",
-                'group': "Internal",
-                'order': -1,
-                }),
-               ('dT', {
-                'type': np.float32,
-                'label': "Galaxy Age",
-                'group': "Internal",
-                'order': -1,
-                }),
-               ('CtreesHaloIDwFlag', {
-                'type': np.int64,
-                'label': "SAGE Halo Index",
-                'description': "Halo index within the tree file",
-                'group': "Internal",
-                'order': -1,
-                }),
-               ('SAGETreeIndex', {
-                'type': np.int32,
-                'label': "SAGE Tree Index",
-                'description': "The index for the simulation tree file "\
-                "that this halo belongs to",
-                'group': "Internal",
-                'order': -1,
-                })
+                        'type': np.int32,
+                        'label': "Merger Type",
+                        'description': "Merger type: "\
+                            "0=none; 1=minor merger; 2=major merger; "\
+                            "3=disk instability; 4=disrupt to ICS",
+                        'group': "Internal",
+                        'order': -1,
+                        }),
+                ('dT', {
+                        'type': np.float32,
+                        'label': "Galaxy Age",
+                        'group': "Internal",
+                        'order': -1,
+                        }),
+                ('CtreesHaloIDwFlag', {
+                        'type': np.int64,
+                        'label': "SAGE Halo Index",
+                        'description': "Halo index within the tree file",
+                        'group': "Internal",
+                        'order': -1,
+                        }),
+                ('SAGETreeIndex', {
+                        'type': np.int32,
+                        'label': "SAGE Tree Index",
+                        'description': "The index for the simulation tree file "\
+                            "that this halo belongs to",
+                        'group': "Internal",
+                        'order': -1,
+                        })
                 ])
 
         self.src_fields_dict = src_fields_dict
@@ -584,10 +584,20 @@ class SAGEConverter_MultiDark(tao.Converter):
 
         if not self.args.a_list:
             raise tao.ConversionError('Must specify a filename for the a-list')
+        
         redshifts = []
         with open(self.args.a_list, 'r') as file:
             for line in file:
-                redshifts.append(1.0 / float(line) - 1.0)
+                line = line.strip()
+                if line:
+                    redshifts.append(1.0 / float(line) - 1.0)
+
+        if len(redshifts) == 0:
+            msg = "Could not parse any redshift values in file {0}"\
+                .format(self.args.a_list)
+            raise tao.ConversionError(msg)
+
+
         return redshifts
 
     def get_mapping_table(self):
@@ -795,8 +805,8 @@ class SAGEConverter_MultiDark(tao.Converter):
         for icore in xrange(ncores):
             nfiles_this_core = nfiles_per_core
             if rem > 0:
-                nfiles_this_core++
-                rem--
+                nfiles_this_core += 1
+                rem -=1
 
             if icore == rank:
                 group_nums_this_core = np.arange(nfiles_assigned,
@@ -908,7 +918,7 @@ class SAGEConverter_MultiDark(tao.Converter):
         for group in group_strings:
             # redshift array is sorted -> pick the last redshift
             redshift = redshift_strings[-1]
-            fn = 'model_z%s_%s' % (redshift, group)
+            fn = 'model_z{0}_{1}'.format(redshift, group)
             with open(os.path.join(self.args.trees_dir, fn), 'rb') as f:
                 n_trees = np.fromfile(f, np.uint32, 1)[0]
                 totntrees += n_trees
@@ -916,11 +926,13 @@ class SAGEConverter_MultiDark(tao.Converter):
 
         # If this is an MPI job, divide up the tasks
         group_nums_this_core = self.map_tree_files_to_cores(group_strings)
+        root_process = self.MPI is None or \
+            (self.MPI is not None and  self.MPI.COMM_WORLD.rank == 0) 
         
         for group in group_nums_this_core:
             files = []
             for redshift in redshift_strings:
-                fn = 'model_z%s_%d' % (redshift, group)
+                fn = 'model_z{0}_{1}'.format(redshift, group)
                 files.append(open(os.path.join(self.args.trees_dir, fn), 'rb'))
 
             n_trees = [np.fromfile(f, np.uint32, 1)[0] for f in files][0]
@@ -930,7 +942,8 @@ class SAGEConverter_MultiDark(tao.Converter):
             print("Working on ntrees = {0} in group = {1}".format(n_trees,
                                                                   group))
 
-            for ii in tqdm(xrange(n_trees)):
+            pbar = lambda x: tqdm(x) if root_process else x
+            for ii in pbar(xrange(n_trees)):
                 tree_size = tree_sizes[ii]
                 tree = np.empty(tree_size, dtype=src_type)
                 offs = 0
