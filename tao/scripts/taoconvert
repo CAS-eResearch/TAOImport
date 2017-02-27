@@ -1,14 +1,27 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import argparse, os, sys, pprint, imp, inspect
+import argparse, os, sys, pprint, imp, inspect, time
 import numpy as np, tao
 from tao.find_modules import find_modules
 from tao import Converter
 
 try:
     from mpi4py import MPI
+
+    # Replacing the assert within MPI
+    # Taken from: http://stackoverflow.com/a/34313363/2237582
+    # put this somewhere but before calling the asserts
+    sys_excepthook = sys.excepthook
+    def mpi_excepthook(type, value, traceback):
+        sys_excepthook(type, value, traceback)
+        if MPI.COMM_WORLD.size > 1:
+            MPI.COMM_WORLD.Abort(1)
+    sys.excepthook = mpi_excepthook 
+
 except ImportError:
     MPI = None
+
+
     
 if __name__ == '__main__':
 
@@ -55,6 +68,8 @@ if __name__ == '__main__':
             sys.exit(1)
         converter_cls.add_arguments(parser)
 
+    tstart = time.time()
+    
     # Now we can parse command line arguments.
     args = parser.parse_args()
 
@@ -97,8 +112,6 @@ if __name__ == '__main__':
         # print("In taoconvert: got MPI on rank = {0}".format(comm.rank))
         
     converter = converter_cls(modules, args)
-    # print("In taoconvert: got MPI on rank = {0} - setting on converter object"
-    #       .format(comm.rank))
     converter.MPI = MPI
     converter.convert()
 
@@ -108,7 +121,18 @@ if __name__ == '__main__':
 
         
     if rank is None or rank == 0:
-        print("Finished")
+        # Taken from http://stackoverflow.com/questions/27779677/python-format-time-elapsed-from-seconds-to-hour-mins-and-sceconds
+        def _timer(start,end):
+            hours, rem = divmod(end-start, 3600)
+            minutes, seconds = divmod(rem, 60)
+            telapsed = "{0:0>2}:{1:0>2}:{2:05.2f}".format(int(hours),
+                                                          int(minutes),
+                                                          seconds)
+            return telapsed
+        
+        time_elapsed = _timer(tstart, time.time())
+        print("Finished converting. Time taken = {0} "
+              .format(time_elapsed))
     
 
 

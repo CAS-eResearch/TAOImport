@@ -229,22 +229,21 @@ class Converter(object):
 
         # If this is an MPI job, then the globalindex/globaldescendants have
         # to be fixed (those indices *must* be unique across all files)
-        if self.MPI is not None:
-            self.finalize_hdf5_parallel_mode()
+        if comm is not None and comm.size > 1:
+            comm.Barrier()
+            self.finalize_hdf5_parallel_mode(comm)
 
         # Now write the common headers for both serial and parallel-mode.
         # (write only on root -- rank = 0 for MPI or the only task in serial)
         if root_process:
-            self.write_common_hdf5_headers()
+            self.write_common_hdf5_headers(comm, verbose=False)
             
-    def write_common_hdf5_headers(self):
+    def write_common_hdf5_headers(self, comm=None, verbose=False):
         
         import h5py
 
-        comm = None
         ncores = 1
-        if self.MPI is not None:
-            comm = self.MPI.COMM_WORLD
+        if comm is not None:
             ncores = comm.size
     
         # Not specifying the rank -> generating the master filename
@@ -255,26 +254,28 @@ class Converter(object):
             hf.attrs['nfiles'] = ncores
             hf.attrs['runtype'] = 'serial' if comm is None else 'parallel'
             alloutputfiles = []
-            if comm is not None:
+            if comm is None:
+                # in serial mode -> current file is the
+                # only output file
+                alloutputfiles.append(outfilename)
+            else:
                 # in MPI mode, each MPI task has written out its own
                 # converted file.
                 for rank in xrange(ncores):
                     alloutputfiles.append(self.generate_hdf5_filename(rank))
-            else:
-                # in serial mode -> current file is the
-                # only output file
-                alloutputfiles.append(outfilename)
                     
             hf.attrs['filenames'] = alloutputfiles
 
         outfilename = self.generate_hdf5_filename()
-        import h5py
-
         with h5py.File(outfilename, 'r+') as hf:
             cmdline_args = OrderedDict(vars(self.args))
             for k,v in cmdline_args.items():
                 if v is not None:
                     hf.attrs[str(k)] = v
+
+        return
+    
+
 
     def generate_hdf5_filename(self, rank=None):
         outfilename = self.args.output
@@ -287,47 +288,100 @@ class Converter(object):
         outfilename += '.h5'
         return outfilename
 
-    def finalize_hdf5_parallel_mode(self):
 
-        if self.MPI is None:
+
+    def finalize_hdf5_parallel_mode(self, comm=None, verbose=False):
+
+        if comm is None or comm.size == 1:
             return
 
+        def _gather_and_cumul_sum_parallel(inputs, comm,
+                                           verbose=False,
+                                           field_desc=''):
+            
+            assert comm is not None
+            rank = comm.rank
+            ncores = comm.size
+            comm.Barrier()
+
+            if verbose:
+                for r in xrange(ncores):
+                    if r == rank:
+                        print("On rank = {0} {1} = {2}"\
+                                  .format(r, field_desc, inputs))
+                    comm.Barrier()
+
+            # Checks:
+
+            # Check #1: The input is of integer type
+            msg = "On rank = {0}, expected integer input but found = {1} "\
+                "instead of type = {2}"\
+                .format(rank, inputs, type(inputs))
+            try:
+                inputs.dtype
+                assert np.issubdtype(inputs.dtype, np.integer), msg
+            except AttributeError:
+                assert isinstance( inputs, ( int, long ) ), msg
+
+            recvbuf = np.zeros(ncores, dtype=np.int64)
+            comm.Allgather([inputs, MPI.INT64_T],
+                           [recvbuf, MPI.INT64_T])
+            recvbuf = recvbuf.cumsum()
+            if rank == 0:
+                offset = 0
+            else:
+                offset = recvbuf[rank-1]
+
+            if verbose:
+                for r in xrange(ncores):
+                    if r == rank:
+                        print("On rank = {0} {1} offset = {2}"\
+                                  .format(r, field_desc, offset))
+                    comm.Barrier()
+                    
+            return offset
+            
+        
+        import h5py
+
+        # The list of fields that need to be fixed
+        tree_fields_to_fix = ['treeindex', 'tree_displs']
+        
         # Was an MPI task -> need to compute the unique
         # globalindex across *all* files
-
         MPI = self.MPI
-        comm = MPI.COMM_WORLD
-        comm.Barrier()
         rank = comm.rank
         ncores = comm.size
         
-        import h5py
         outfilename = self.generate_hdf5_filename(rank)
         with h5py.File(outfilename, 'r') as hf:
             gal = hf['galaxies']
+
+            # number of galaxies per core is to fix `global*` fields
             ngalaxies_this_core = np.array(gal.shape[0], dtype=np.int64)
 
-        comm.Barrier()
-        offset = np.int(0)
-        recvbuf = np.zeros(ncores, dtype=np.int64)
-        comm.Allgather([ngalaxies_this_core, MPI.INT64_T],
-                       [recvbuf, MPI.INT64_T])
-        recvbuf = recvbuf.cumsum()
+            # number of trees per core is to fix `treeindex` field
+            tree = hf['tree_counts']
+            ntrees_this_core = np.array(tree.shape[0], dtype=np.int64)
 
-        if rank == 0:
-            offset = 0
-        else:
-            offset = recvbuf[rank-1]
-        
 
-        # print("offset = {0} on rank = {1} file = {2}"
-        #       .format(offset, rank, outfilename))
+        # Find the number of galaxies written up to the previous core
+        galaxy_offset = _gather_and_cumul_sum_parallel(ngalaxies_this_core,
+                                                       comm,
+                                                       verbose=verbose,
+                                                       field_desc='ngalaxies')
+
+        # Now find the number of trees written up to the previous core
+        tree_offset = _gather_and_cumul_sum_parallel(ntrees_this_core,
+                                                     comm,
+                                                     verbose=verbose,
+                                                     field_desc='ntrees')
 
         # what are the fields that are 'global' ?
         # Essentially, these fields should be unique across
         # all files. Currently, these fields are only unique
         # across the local file (corresponding to the rank)
-        # By adding the offset (== number of galaxies written upto
+        # By adding the galaxy_offset (== number of galaxies written upto
         # this local file), we can make all of the 'global' fields
         # unique across all files.
         globalfields = []
@@ -343,7 +397,7 @@ class Converter(object):
                         if 'global' in f.lower() and f not in globalfields:
                             globalfields.append(f)
 
-        # Check that globalfields is unique, otherwise the offset
+        # Check that globalfields is unique, otherwise the galaxy_offset
         # will be applied twice.
         unique_len = len(set(globalfields))
         if unique_len != len(globalfields):
@@ -355,40 +409,69 @@ class Converter(object):
             
             raise AssertionError(msg)
 
-        # Now fix the global* indices 
-        if rank > 0:
-            with h5py.File(outfilename, 'a') as hf:
-                galaxies = hf['galaxies']
-                for f in globalfields:
-                    try:
-                        # print("Before offsetting `field' {0} "
-                        #       " on rank = {1}: val = {2}"
-                        #       .format(f, rank, galaxies[f][0]))
-
-                        val = galaxies[f][:]
-                        val[val >= 0] += offset
-                        galaxies[f] = val
-
-                        # print("After offsetting `field' {0} "
-                        #       " on rank = {1} : val = {2} (offset = {3})"
-                        #       .format(f, rank, galaxies[f][0], offset))
-
-
-                    except:
-                        raise
-            
-            # Only the non-root processes have to fix the offsets
-            # and once the MPI processes have fixed those indices,
-            # their job is done
-            if rank > 0:
-                return
-
-
-        # Now let's create a hdf5 master file that will hold sym-links to the
-        # individual hdf5 files created by the MPI processes. Only done on the
-        # root processor.
-        assert rank == 0
+        # No offsets to fix on the root process, hence return immediately
+        # The advantage is less tabbing in the following sub-section :)
+        # - MS: 27/02/2017
+        if rank == 0:
+            return
         
+        # Now fix the global* indices on cores that do need to
+        # apply an offset
+        with h5py.File(outfilename, 'a') as hf:
+            galaxies = hf['galaxies']
+            for f in globalfields:
+                try:
+                    val = galaxies[f][:]
+
+
+                    # -- *Checks* -- 
+
+                    # Check # 1:
+                    # Check that we are not accidentally offsetting a different
+                    # field that does not correspond to the generator. Unlikely
+                    # to occur but always a good idea. 
+                    msg = 'For field = {0}, maximum = {1} must at most '\
+                        'equal to the number of galaxies on this core = '\
+                        '{2} (rank = {3})'\
+                        .format(f, val.max(), ngalaxies_this_core, rank)
+                    assert val.max() < ngalaxies_this_core, msg
+
+                    # Check # 2:
+                    # Another check would be
+                    # to make sure that the val.shape > ntrees_this_core
+                    msg = 'For field = {0}, the length of the array = {1} '\
+                        'should be (much) greater than the number of trees '\
+                        ' = {2} on this core (rank = {3}) '\
+                        '(since each tree should contain a few galaxies)' \
+                        .format(f, val.shape[0], ntrees_this_core, rank)
+                    assert val.shape[0] > ntrees_this_core, msg
+                    
+                    val[val >= 0] += galaxy_offset
+                    galaxies[f] = val
+
+                except:
+                    raise
+
+            # Now let's fix the fields that need to be offset by the number
+            # of trees written out by *all* previous cores. The field
+            # itself could be either directly specified in the file or 
+            # within the galaxy dtype
+            for f in tree_fields_to_fix:
+                try:
+                    val = galaxies[f]
+
+                # MS: I find this an annoying "feature" of numpy
+                # If the field does not exist, the exception should
+                # be a KeyError and *NOT* a ValueError. I also think the
+                # numpy developers are also aware of this since I seem
+                # to recall seeing an issue saying that the behaviour
+                # will be changed in the future. Hence, catching both
+                # the errors here. - MS 27th Feb, 2017
+                except (ValueError, KeyError):
+                    val = hf[f]
+
+                val += tree_offset
+
         return
         
     def convert_tree(self, src_tree):
