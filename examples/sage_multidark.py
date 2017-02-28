@@ -799,6 +799,13 @@ class SAGEConverter_MultiDark(tao.Converter):
 
         # Easiest way to split is simply to divide the files over the cores
         nfiles = len(group_strings)
+        if ncores > nfiles:
+            msg = "Error: There are only {0} input files that need to be "\
+                "converted but there are {1} parallel tasks. Please use {0} "\
+                "tasks at the most(`mpirun -np {0} taoconvert ...`)"\
+                .format(nfiles, ncores)
+            raise ValueError(msg)
+
         nfiles_per_core = nfiles // ncores
         rem = nfiles % ncores
         nfiles_assigned=0

@@ -345,7 +345,8 @@ class Converter(object):
         import h5py
 
         # The list of fields that need to be fixed
-        tree_fields_to_fix = ['treeindex', 'tree_displs']
+        tree_fields_to_fix = [('treeindex', 'tree'),
+                              ('tree_displs', 'galaxy')]
         
         # Was an MPI task -> need to compute the unique
         # globalindex across *all* files
@@ -456,9 +457,23 @@ class Converter(object):
             # of trees written out by *all* previous cores. The field
             # itself could be either directly specified in the file or 
             # within the galaxy dtype
-            for f in tree_fields_to_fix:
+            for f, typ in tree_fields_to_fix:
+
+                if 'tree' in typ.lower():
+                    offset = tree_offset
+                elif 'galaxy' in typ.lower():
+                    offset = galaxy_offset
+                else:
+                    msg = "Offset can only be of 'tree' or 'galaxy' type "\
+                        "but for field = {0}, the offset type is specified as"\
+                        " {1}".format(f, typ)
+                    raise ValueError(msg)
+                
+                
                 try:
-                    val = galaxies[f]
+                    val = galaxies[f][:]
+                    val += offset
+                    galaxies[f] = val
 
                 # MS: I find this an annoying "feature" of numpy
                 # If the field does not exist, the exception should
@@ -468,10 +483,10 @@ class Converter(object):
                 # will be changed in the future. Hence, catching both
                 # the errors here. - MS 27th Feb, 2017
                 except (ValueError, KeyError):
-                    val = hf[f]
-
-                val += tree_offset
-
+                    val = hf[f][:]
+                    val += offset
+                    hf[f][:] = val[:]
+                    
         return
         
     def convert_tree(self, src_tree):

@@ -115,24 +115,35 @@ if __name__ == '__main__':
     converter.MPI = MPI
     converter.convert()
 
+    # Taken from http://stackoverflow.com/questions/27779677/python-format-time-elapsed-from-seconds-to-hour-mins-and-sceconds
+    def _timer(start, end):
+        hours, rem = divmod(end-start, 3600)
+        minutes, seconds = divmod(rem, 60)
+        telapsed = "{0:0>2}:{1:0>2}:{2:05.2f}".format(int(hours),
+                                                      int(minutes),
+                                                      seconds)
+        return telapsed
+    
+    tend = time.time()
+    cpu_time = tend - tstart
+    ncores = 1
     if comm is not None:
-        comm.Barrier()
+        ncores = comm.size
+        cpu_time = np.array(cpu_time,'d')
+        comm.Allreduce(MPI.IN_PLACE, [cpu_time, MPI.DOUBLE],
+                       op=MPI.SUM)
+        cpu_time = float(cpu_time)
         converter.MPI.Finalize()
-
+        MPI = None
+        comm = None
         
     if rank is None or rank == 0:
-        # Taken from http://stackoverflow.com/questions/27779677/python-format-time-elapsed-from-seconds-to-hour-mins-and-sceconds
-        def _timer(start,end):
-            hours, rem = divmod(end-start, 3600)
-            minutes, seconds = divmod(rem, 60)
-            telapsed = "{0:0>2}:{1:0>2}:{2:05.2f}".format(int(hours),
-                                                          int(minutes),
-                                                          seconds)
-            return telapsed
-        
-        time_elapsed = _timer(tstart, time.time())
-        print("Finished converting. Time taken = {0} "
-              .format(time_elapsed))
-    
+        tend = time.time()
+        time_elapsed = _timer(tstart, tend)
+        actual_cpu_time = (tend - tstart) * ncores
+        parallel_efficiency = cpu_time/actual_cpu_time * 100.0
+        print("Finished converting. Wall-clock time taken = {0}, total "
+              "cpu-time = {1:0.2f} seconds (parallel efficiency = {2:5.2f}%)"
+              .format(time_elapsed, cpu_time, parallel_efficiency))
 
 
