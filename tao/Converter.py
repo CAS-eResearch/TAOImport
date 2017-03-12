@@ -278,7 +278,10 @@ class Converter(object):
 
 
     def generate_hdf5_filename(self, rank=None):
-        outfilename = self.args.output
+        import os
+
+        # Store the absolute path
+        outfilename = os.path.abspath(self.args.output)
         if rank is not None:
             if outfilename[-1] != '_':
                 outfilename += '_'
