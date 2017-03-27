@@ -10,7 +10,6 @@ import numpy as np
 import tao
 from collections import OrderedDict
 from tqdm import tqdm
-from tqdm import trange
 import h5py
 from IPython.core.debugger import Tracer
 
@@ -1032,6 +1031,63 @@ class MERAXESConverter(tao.Converter):
 
         return np.zeros(len(tree), dtype=np.float32)
 
+
+
+     def map_tree_files_to_cores(self, nfiles):
+        """
+        Splits up the input tree files across cores (for MPI jobs)
+        Otherwise, simply returns the input array of `group_strings`
+
+        Input:
+        nfiles: Number of cores used to write the input meraxes files
+        
+        Returns: numpy array of 'cores' that this cpu needs to process
+
+        """
+        if self.MPI is None:
+            # equivalently could be written as np.arange(ncores)
+            # but I want to not assume default behaviour as far as possible
+            return  np.arange(0, ncores, step=1, dtype=np.int64)
+        
+        comm = self.MPI.COMM_WORLD
+        rank = comm.rank
+        ncores = comm.size
+
+        if ncores > nfiles:
+            msg = "Error: There are only {0} input files that need to be "\
+                "converted but there are {1} parallel tasks. Please use {0} "\
+                "tasks at the most(`mpirun -np {0} taoconvert ...`)"\
+                .format(nfiles, ncores)
+            raise ValueError(msg)
+            
+        
+        nfiles_per_core = nfiles // ncores
+        rem = nfiles % ncores
+        nfiles_assigned=0
+        for icore in xrange(ncores):
+            nfiles_this_core = nfiles_per_core
+            if rem > 0:
+                nfiles_this_core += 1
+                rem -=1
+
+            if icore == rank:
+                group_nums_this_core = np.arange(nfiles_assigned,
+                                                 nfiles_assigned + nfiles_this_core,
+                                                 step=1,
+                                                 dtype=np.int64)
+
+            # Once icore == rank has been triggered, the following line
+            # does not have any impact on the return value. However,
+            # this line serves as a check that the logic is correct
+            nfiles_assigned += nfiles_this_core
+
+        assert nfiles == nfiles_assigned
+        assert rem == 0
+
+        return group_nums_this_core
+        
+
+    
     @profile
     def iterate_trees(self):
         """Iterate over MERAXES trees."""
@@ -1096,10 +1152,15 @@ class MERAXESConverter(tao.Converter):
 
         numtrees_processed = 0
         print("totntrees = {0}".format(totntrees))
+        
+        # If this is an MPI job, divide up the tasks
+        core_nums_this_core = self.map_tree_files_to_cores(ncores)
+        root_process = self.MPI is None or \
+            (self.MPI is not None and self.MPI.COMM_WORLD.rank == 0)
 
         with h5py.File(sim_file, "r") as fin:
-
-            for icore in range(ncores):
+            
+            for icore in core_nums_this_core:
                 ntrees_this_core = ntrees[icore]
                 print("Working on {0} trees on core = {1}".format(ntrees_this_core, icore))
                 fin_galaxies_per_snap = dict()
@@ -1116,8 +1177,8 @@ class MERAXESConverter(tao.Converter):
 
                 nforests = len(tree_fids)
 
-                # trange is shortcut for tqdm( [x]range(length))
-                for iforest in trange(nforests, total=nforests):
+                pbar = lambda x : tqdm(x) if root_process else x
+                for iforest in pbar(xrange(nforests)):
                     forest = tree_fids[iforest]
                     
                     # number of galaxies per snapshot for this forest

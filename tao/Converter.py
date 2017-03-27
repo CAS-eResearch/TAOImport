@@ -486,10 +486,32 @@ class Converter(object):
                 # will be changed in the future. Hence, catching both
                 # the errors here. - MS 27th Feb, 2017
                 except (ValueError, KeyError):
-                    val = hf[f][:]
-                    val += offset
-                    hf[f][:] = val[:]
-                    
+                    try:
+                        # These are `tree_displs` fields which are
+                        # embedded into the hdf5 file directly (rather
+                        # than a galaxy property).
+                        # Clarifying note: `tree_counts` is a per-tree
+                        # quantity *also* embedded but being a per-tree
+                        # quantity, `tree_counts` does not need any special
+                        # fixes for the parallel case. -MS, 21st Mar, 2017
+                        val = hf[f][:]
+                        val += offset
+                        hf[f][:] = val[:]
+                        # Why not this line? - MS 14th Mar, 2017
+                        # hf[f] = val
+                    except (ValueError, KeyError):
+
+                        # The treeindex field only exists in SAGE-like datasets
+                        # Technically, I could check the converter cls and
+                        # parse for 'SAGE' but that would require assuming a
+                        # naming convention. Compromise - warn if 'SAGE'
+                        # is not present in the converter name
+                        if not 'SAGE' in (converter.__name__).upper():
+                            print("Warning: Could not find field = `{0}' in "
+                                  "the hdf5 file. (Normal behaviour for "
+                                  "`treeindex' field while converting "
+                                  "non-SAGE datasets)".format(f))
+                        pass
         return
         
     def convert_tree(self, src_tree):
