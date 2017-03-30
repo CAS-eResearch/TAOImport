@@ -4,12 +4,12 @@ A control script to be used with `taoconvert` to convert DARK SAGE output
 binary data into HDF5 input for TAO.
 
 """
-
+from __future__ import print_function
 import re, os
 import numpy as np
 import tao
 from collections import OrderedDict
-import progressbar
+from tqdm import tqdm
 
 class DARKSAGEConverter(tao.Converter):
     """Subclasses tao.Converter to perform SAGE output conversion."""
@@ -3688,6 +3688,60 @@ class DARKSAGEConverter(tao.Converter):
         """Convert SAGE dT values to Gyrs"""
         return tree['dT'] * 1e-3
 
+    def map_tree_files_to_cores(self, group_strings):
+        """
+        Splits up the input tree files across cores (for MPI jobs)
+        Otherwise, simply returns the input array of `group_strings`
+        (group_strings are the core that SAGE processed the corresponding
+        input tree file on)
+
+        
+        Returns: numpy array of file numbers that this core needs to process
+
+        """
+        if self.MPI is None:
+            return  np.array(group_strings, dtype=np.int64)
+        
+        comm = self.MPI.COMM_WORLD
+        rank = comm.rank
+        ncores = comm.size
+
+        # Easiest way to split is simply to divide the files over the cores
+        nfiles = len(group_strings)
+        if ncores > nfiles:
+            msg = "Error: There are only {0} input files that need to be "\
+                "converted but there are {1} parallel tasks. Please use {0} "\
+                "tasks at the most(`mpirun -np {0} taoconvert ...`)"\
+                .format(nfiles, ncores)
+            raise ValueError(msg)
+            
+        
+        nfiles_per_core = nfiles // ncores
+        rem = nfiles % ncores
+        nfiles_assigned=0
+        for icore in xrange(ncores):
+            nfiles_this_core = nfiles_per_core
+            if rem > 0:
+                nfiles_this_core += 1
+                rem -=1
+
+            if icore == rank:
+                group_nums_this_core = np.arange(nfiles_assigned,
+                                                 nfiles_assigned + nfiles_this_core,
+                                                 step=1,
+                                                 dtype=np.int64)
+
+            # Once icore == rank has been triggered, the following line
+            # does not have any impact on the return value. However,
+            # this line serves as a check that the logic is correct
+            nfiles_assigned += nfiles_this_core
+
+        assert nfiles == nfiles_assigned
+        assert rem == 0
+
+        return group_nums_this_core
+
+    
     def iterate_trees(self):
         """Iterate over SAGE trees."""
 
@@ -3810,18 +3864,20 @@ class DARKSAGEConverter(tao.Converter):
         for group in group_strings:
             # redshift array is sorted -> pick the last redshift
             redshift = redshift_strings[-1]
-            fn = 'model_z%s_%s' % (redshift, group)
+            fn = 'model_z{0}_{1}'.format(redshift, group)
             with open(os.path.join(self.args.trees_dir, fn), 'rb') as f:
                 n_trees = np.fromfile(f, np.uint32, 1)[0]
                 totntrees += n_trees
 
-        numtrees_processed = 0
-        bar = progressbar.ProgressBar(max_value=totntrees)
+        # If this is an MPI job, divide up the tasks
+        group_nums_this_core = self.map_tree_files_to_cores(group_strings)
+        root_process = self.MPI is None or \
+            (self.MPI is not None and self.MPI.COMM_WORLD.rank == 0)
 
-        for group in group_strings:
+        for group in group_nums_this_core:
             files = []
             for redshift in redshift_strings:
-                fn = 'model_z%s_%s' % (redshift, group)
+                fn = 'model_z{0}_{1}'.format(redshift, group)
                 files.append(open(os.path.join(self.args.trees_dir, fn), 'rb'))
 
             n_trees = [np.fromfile(f, np.uint32, 1)[0] for f in files][0]
@@ -3829,7 +3885,8 @@ class DARKSAGEConverter(tao.Converter):
             chunk_sizes = [np.fromfile(f, np.uint32, n_trees) for f in files]
             tree_sizes = sum(chunk_sizes)
 
-            for ii in xrange(n_trees):
+            pbar = lambda x : tqdm(x) if root_process else x 
+            for ii in pbar(xrange(n_trees)):
                 tree_size = tree_sizes[ii]
                 tree = np.empty(tree_size, dtype=src_type)
                 offs = 0
@@ -3927,8 +3984,6 @@ class DARKSAGEConverter(tao.Converter):
                               tree['CentralGalaxyIndex'][ind])), \
                     "Central Galaxy Index must equal Galaxy Index for centrals"
                               
-                numtrees_processed += 1
-                bar.update(numtrees_processed)
                 
                 yield tree
 
