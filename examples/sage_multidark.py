@@ -154,7 +154,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Hot halo gas cooling rate",
                         'group': "Galaxy Properties",
                         'units': "erg/s",
-                        'order': 19,
+                        'order': 16,
                         }),
                 ('Heating', {
                         'type': np.float32,
@@ -162,7 +162,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "AGN Heating Rate",
                         'group': "Galaxy Properties",
                         'units': "erg/s",
-                        'order': 20,
+                        'order': 17,
                         }),
                 ('QuasarModeBHaccretionMass', {
                         'type': np.float32,
@@ -172,7 +172,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                             "time step.",
                         'group': "Galaxy Properties",
                         'units': "10^10 Msun/h",
-                        'order': 21,
+                        'order': 18,
                         }),
                 ('TimeofLastMajorMerger', {
                         'type': np.float32,
@@ -180,7 +180,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Time of last major merger",
                         'group': "Galaxy Properties",
                         'units': "Myr/h",
-                        'order': 22,
+                        'order': 19,
                         }),
                 ('TimeofLastMinorMerger', {
                         'type': np.float32,
@@ -188,7 +188,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Time of last minor merger",
                         'group': "Galaxy Properties",
                         'units': "Myr/h",
-                        'order': 23,
+                        'order': 20,
                         }),
                 ('OutflowRate', {
                         'type': np.float32,
@@ -197,7 +197,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                             "supernovae",
                         'group': "Galaxy Properties",                        
                         'units': "Msun/yr",
-                        'order': 24,
+                        'order': 21,
                          }),
                  ('MeanStarAge', {
                       'type': np.float32,
@@ -205,7 +205,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                       'description': "Mean age (look-back time from z=0) of stars in the galaxy",
                       'group': "Galaxy Properties",
                       'units': "Myr/h",
-                      'order': 25,
+                      'order': 22,
                       }),
                 ('Mvir', {
                         'type': np.float32,
@@ -213,7 +213,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Virial mass of the (sub)halo",
                         'group': "Halo Properties",
                         'units': "10^10 Msun/h",
-                        'order': 26,
+                        'order': 23,
                         }),
                 ('Rvir', {
                         'type': np.float32,
@@ -221,7 +221,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Physical virial radius of the (sub)halo",
                         'group': "Halo Properties",
                         'units': "Mpc/h",
-                        'order': 27,
+                        'order': 24,
                         }),
                 ('Vvir', {
                         'type': np.float32,
@@ -229,7 +229,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Virial Speed of the (sub)halo",
                         'group': "Halo Properties",
                         'units': "km/s",
-                        'order': 28,
+                        'order': 25,
                         }),
                 ('Vmax', {
                         'type': np.float32,
@@ -237,7 +237,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Maximum circular speed of the (sub)halo",
                         'group': "Halo Properties",
                         'units': "km/s",
-                        'order': 29,
+                        'order': 26,
                         }),
                 ('VelDisp', {
                         'type': np.float32,
@@ -245,7 +245,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Velocity dispersion of the (sub)halo",
                         'group': "Halo Properties",
                         'units': "km/s",
-                        'order': 30,
+                        'order': 27,
                         }),
                 ('Spin_x', {
                         'type': np.float32,
@@ -261,7 +261,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                             "of the halo", 
                         'group': "Halo Properties",
                         'units': 'Mpc * km/s',
-                        'order': 31,
+                        'order': 28,
                         }),
                 ('Spin_y', {
                         'type': np.float32,
@@ -277,7 +277,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                             "of the halo", 
                         'group': "Halo Properties",
                         'units': 'Mpc * km/s',
-                        'order': 32,
+                        'order': 29,
                         }),
                 ('Spin_z', {
                         'type': np.float32,
@@ -293,7 +293,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                             "of the halo", 
                         'group': "Halo Properties",
                         'units': 'Mpc * km/s',
-                        'order': 33,
+                        'order': 30,
                         }),
                 ('Len', {
                         'type': np.int32,
@@ -301,7 +301,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Total number of simulation particles "\
                             "in the dark matter halo",
                         'group': "Halo Properties",
-                        'order': 34,
+                        'order': 31,
                         }),
                 ('CentralMvir', {
                         'type': np.float32,
@@ -309,7 +309,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Virial mass of the central galaxy halo",
                         'group': "Halo Properties",
                         'units': "10^10 Msun/h",
-                        'order': 35,
+                        'order': 32,
                         }),
                 ('infallMvir', {
                         'type': np.float32,
@@ -317,7 +317,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Subhalo Mvir at infall",
                         'group': "Halo Properties",
                         'units': "10^10 Msun/h",                        
-                        'order': 36,
+                        'order': 33,
                         }),
                 ('infallVvir', {
                         'type': np.float32,
@@ -325,7 +325,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Subhalo Vvir at infall",
                         'group': "Halo Properties",
                         'units': "km/s",
-                        'order': 37,
+                        'order': 34,
                         }),
                 ('infallVmax', {
                         'type': np.float32,
@@ -333,7 +333,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Subhalo Vmax at infall",
                         'group': "Halo Properties",
                         'units': "km/s",                        
-                        'order': 38,
+                        'order': 35,
                         }),
                ('Vpeak', {
                         'type': np.float32,
@@ -343,14 +343,14 @@ class SAGEConverter_MultiDark(tao.Converter):
                         "during mergers, see Vrelax for a better property)",
                         'group': "Halo Properties",
                         'units': "km/s",
-                        'order': 39,
+                        'order': 36,
                         }),
                ('FlybyFlag', {
                         'type': np.int32,
                         'label': "Flyby Flag",
                         'description': "1-is a flyby halo, 0-normal halo",
                         'group': "Halo Properties",
-                        'order': 40,
+                        'order': 37,
                         }),
                 ('Pos_x', {
                         'type': np.float32,
@@ -358,7 +358,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Co-moving X position of the (sub)halo",
                         'group': "Positions & Velocities",
                         'units': "Mpc/h",
-                        'order': 41,
+                        'order': 38,
                         }),
                 ('Pos_y', {
                         'type': np.float32,
@@ -366,7 +366,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Co-moving Y position of the (sub)halo",
                         'group': "Positions & Velocities",
                         'units': "Mpc/h",
-                        'order': 42,
+                        'order': 39,
                         }),
                 ('Pos_z', {
                         'type': np.float32,
@@ -374,7 +374,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Co-moving Z position of the (sub)halo",
                         'group': "Positions & Velocities",
                         'units': "Mpc/h",
-                        'order': 43,
+                        'order': 40,
                         }),
                 ('Vel_x', {
                         'type': np.float32,
@@ -382,7 +382,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "X component of the galaxy/halo velocity",
                         'group': "Positions & Velocities",
                         'units': "km/s",
-                        'order': 44,
+                        'order': 41,
                         }),
                 ('Vel_y', {
                         'type': np.float32,
@@ -390,7 +390,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Y component of the galaxy/halo velocity",
                         'group': "Positions & Velocities",
                         'units': "km/s",
-                        'order': 45,
+                        'order': 42,
                         }),
                 ('Vel_z', {
                         'type': np.float32,
@@ -398,14 +398,14 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "Z component of the galaxy/halo velocity",
                         'group': "Positions & Velocities",
                         'units': "km/s",
-                        'order': 46,
+                        'order': 43,
                         }),
                 ('SnapNum', {
                         'type': np.int32,
                         'label': "Snapshot Number",
                         'description': "Snapshot number in the simulation",
                         'group': "Simulation",
-                        'order': 47,
+                        'order': 44,
                         }),
                 ('GalaxyIndex', {
                         'type': np.int64,
@@ -413,7 +413,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "A unique ID that stays with the "\
                             "galaxy/halo for its entire history",
                         'group': "Simulation",
-                        'order': 48,
+                        'order': 45,
                         }),
                 ('CentralGalaxyIndex', {
                         'type': np.int64,
@@ -421,7 +421,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "The unique Galaxy ID of the "\
                             "central galaxy this galaxy/halo belongs to",
                         'group': "Simulation",
-                        'order': 49,
+                        'order': 46,
                         }),
                 ('CtreesHaloID', {
                         'type': np.int64,
@@ -429,14 +429,14 @@ class SAGEConverter_MultiDark(tao.Converter):
                         'description': "An ID for the (sub)halo passed through "\
                             "from the original simulation",
                         'group': "Simulation",
-                        'order': 50,
+                        'order': 47,
                         }),
                ('CtreesCentralID', {
-                    'type': np.int64,
-                    'label': "Simulation Central Halo ID",
-                    'description': "An ID for the main halo passed through from the original simulation",
-                    'group': "Simulation",
-                    'order': 51,
+                        'type': np.int64,
+                        'label': "Simulation Central Halo ID",
+                        'description': "An ID for the main halo passed through from the original simulation",
+                        'group': "Simulation",
+                        'order': 48,
                     }),
                 ('SfrDisk', {
                         'type': np.float32,
@@ -629,6 +629,7 @@ class SAGEConverter_MultiDark(tao.Converter):
         wanted_field_keys = [
             'GalaxyIndex',
             'CentralGalaxyIndex',
+            'CtreesHaloID',
             'CtreesCentralID',
             'FlybyFlag',
             'mergeIntoID',
@@ -773,7 +774,7 @@ class SAGEConverter_MultiDark(tao.Converter):
         return abs(tree['CtreesHaloIDwFlag'])
     
     def Flyby(self, tree):
-        return tree['CtreesHaloIDwFlag'] < 0
+        return np.int32(tree['CtreesHaloIDwFlag'] < 0)
 
     def map_dt(self, tree):
         """Convert SAGE dT values to Gyrs"""
@@ -881,7 +882,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                       'TimeofLastMajorMerger',
                       'TimeofLastMinorMerger',
                       'OutflowRate',
-		      'MeanStarAge',
+                      'MeanStarAge',
                       'infallMvir',
                       'infallVvir',
                       'infallVmax'
