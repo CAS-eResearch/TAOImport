@@ -51,7 +51,7 @@ class DARKSAGEConverter(tao.Converter):
                ('PseudoBulgeMass', {
                     'type': np.float32,
                     'label': "Pseudobulge Mass",
-                    'description': "Stellar mass in the disc inside 0.2 * Cooling Scale Radius",
+                    'description': "Stellar mass in the disk inside 0.2 * Cooling Scale Radius",
                     'units': "10^10 Msun/h",
                     'group': "Galaxy Masses",
                     'order': 4,
@@ -68,14 +68,14 @@ class DARKSAGEConverter(tao.Converter):
                         'type': np.float32,
                         'label': "Cold Gas Mass",
                         'units': "10^10 Msun/h",
-                        'description': "Cold gas mass of the galaxy",
+                        'description': "Cold-gas mass of the galaxy",
                         'group': "Galaxy Masses",
                         'order': 6,
                         }),
                ('HImass', {
                         'type': np.float32,
                         'label': "HI Mass",
-                        'description': "Atomic-hydrogen mass",
+                        'description': "Atomic-hydrogen mass of the galaxy",
                         'group': "Galaxy Masses",
                         'units': "10^10 Msun/h",
                         'order': 7,
@@ -83,7 +83,7 @@ class DARKSAGEConverter(tao.Converter):
                ('H2mass', {
                         'type': np.float32,
                         'label': "H2 Mass",
-                        'description': "Molecular-hydrogen mass",
+                        'description': "Molecular-hydrogen mass of the galaxy",
                         'group': "Galaxy Masses",
                         'units': "10^10 Msun/h",
                         'order': 8,
@@ -92,7 +92,7 @@ class DARKSAGEConverter(tao.Converter):
                         'type': np.float32,
                         'label': "Hot Gas Mass",
                         'units': "10^10 Msun/h",
-                        'description': "Hot gas mass around the galaxy",
+                        'description': "Hot-gas mass around the galaxy",
                         'group': "Galaxy Masses",                        
                         'order': 9,
                         }),
@@ -108,7 +108,7 @@ class DARKSAGEConverter(tao.Converter):
                         'type': np.float32,
                         'label': "Intracluster Stars Mass",
                         'units': "10^10 Msun/h",
-                        'description': "Stellar mass in the intracluster stars",
+                        'description': "Stellar mass dispersed in the halo, not in any particular galaxy",
                         'group': "Galaxy Masses",                        
                         'order': 11,
                         }),
@@ -146,7 +146,7 @@ class DARKSAGEConverter(tao.Converter):
                ('MetalsPseudoBulge', {
                         'type': np.float32,
                         'label': "Metals Pseudobulge Mass",
-                        'description': "Mass of metals in the pseudobulge",
+                        'description': "Mass of metals in the disk inside 0.2 * Cooling Scale Radius",
                         'units': "10^10 Msun/h",
                         'group': "Galaxy Masses",
                         'order': 16,
@@ -177,8 +177,8 @@ class DARKSAGEConverter(tao.Converter):
                         }),
                 ('MetalsICS', {
                         'type': np.float32,
-                        'label': "Metals IntraCluster Stars Mass",
-                        'description': "Mass of metals in the intracluster stars",
+                        'label': "Metals Intracluster Stars Mass",
+                        'description': "Mass of metals in stars dispersed throughout the halo",
                         'units': "10^10 Msun/h",
                         'group': "Galaxy Masses",                        
                         'order': 20,
@@ -201,7 +201,7 @@ class DARKSAGEConverter(tao.Converter):
                ('r50', {
                         'type': np.float32,
                         'label': "Half-Mass Radius",
-                        'description': "Radius containing 50% of the stellar disk content",
+                        'description': "Radius enclosing 50% of the stellar disk content",
                         'group': "Galaxy Properties",
                         'units': "Mpc/h",
                         'order': 23,
@@ -209,7 +209,7 @@ class DARKSAGEConverter(tao.Converter):
                ('r90', {
                         'type': np.float32,
                         'label': "90-Percent Radius",
-                        'description': "Radius containing 90% of the stellar disk content",
+                        'description': "Radius enclosing 90% of the stellar disk content",
                         'group': "Galaxy Properties",
                         'units': "Mpc/h",
                         'order': 24,
@@ -233,7 +233,7 @@ class DARKSAGEConverter(tao.Converter):
                ('rSFR', {
                         'type': np.float32,
                         'label': "Star Formation Radius",
-                        'description': "Radius containing 50% of the disk's star formation activity",
+                        'description': "Radius enclosing 50% of the disk's star formation activity",
                         'group': "Galaxy Properties",
                         'units': "Mpc/h",
                         'order': 27,
@@ -265,23 +265,23 @@ class DARKSAGEConverter(tao.Converter):
                 ('Cooling', {
                         'type': np.float32,
                         'label': "Hot Gas Cooling Rate",
-                        'description': "Hot halo gas cooling rate",
+                        'description': "Net cooling rate of hot gas in the halo",
                         'group': "Galaxy Properties",
-                        'units': "erg/s",
+                        'units': "log10(erg/s)",
                         'order': 31,
                         }),
                 ('Heating', {
                         'type': np.float32,
                         'label': "AGN Heating Rate",
-                        'description': "AGN Heating Rate",
+                        'description': "Gross heating rate from the active galactic nucleus",
                         'group': "Galaxy Properties",
-                        'units': "erg/s",
+                        'units': "log10(erg/s)",
                         'order': 32,
                         }),
                 ('TimeofLastMajorMerger', {
                         'type': np.float32,
                         'label': "Time of Last Major Merger",
-                        'description': "Time of last major merger",
+                        'description': "Look-back time (from z=0) of last major merger",
                         'group': "Galaxy Properties",
                         'units': "Myr/h",
                         'order': 33,
@@ -289,7 +289,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('OutflowRate', {
                         'type': np.float32,
                         'label': "Supernova Cold Gas Outflow Rate",
-                        'description': "Cold gas outflow rate from stellar feedback",
+                        'description': "Cold-gas outflow rate from stellar feedback",
                         'group': "Galaxy Properties",
                         'units': "Msun/yr",
                         'order': 34,
@@ -297,7 +297,7 @@ class DARKSAGEConverter(tao.Converter):
                  ('jStarDisc', {
                       'type': np.float32,
                       'label': "j Stellar Disk",
-                      'description': "Net specific angular momentum of stars in the disk",
+                      'description': "Specific angular momentum of the entire stellar disk, including the pseudobulge",
                       'group': "Galaxy Properties",
                       'units': "kpc/h * km/s",
                       'order': 35,
@@ -313,7 +313,7 @@ class DARKSAGEConverter(tao.Converter):
                  ('jGas', {
                       'type': np.float32,
                       'label': "j Cold Gas",
-                      'description': "Net specific angular momentum of the cold gas disk",
+                      'description': "Specific angular momentum of the entire cold gas disk",
                       'group': "Galaxy Properties",
                       'units': "kpc/h * km/s",
                       'order': 37,
@@ -337,42 +337,42 @@ class DARKSAGEConverter(tao.Converter):
                 ('SpinStars_x', {
                       'type': np.float32,
                       'label': "X Spin of Stellar Disk",
-                      'description': "Normalised x-axis component of stellar disc spin vector",
+                      'description': "Normalised x-axis component of the stellar disk spin vector",
                       'group': "Galaxy Properties",
                       'order': 40,
                   }),
                  ('SpinStars_y', {
                       'type': np.float32,
                       'label': "Y Spin of Stellar Disk",
-                      'description': "Normalised y-axis component of stellar disc spin vector",
+                      'description': "Normalised y-axis component of the stellar disk spin vector",
                       'group': "Galaxy Properties",
                       'order': 41,
                   }),
                  ('SpinStars_z', {
                       'type': np.float32,
                       'label': "Z Spin of Stellar Disk",
-                      'description': "Normalised z-axis component of stellar disc spin vector",
+                      'description': "Normalised z-axis component of the stellar disk spin vector",
                       'group': "Galaxy Properties",
                       'order': 42,
                   }),
                  ('SpinGas_x', {
                       'type': np.float32,
                       'label': "X Spin of Gas Disk",
-                      'description': "Normalised x-axis component of gas disc spin vector",
+                      'description': "Normalised x-axis component of the gas disk spin vector",
                       'group': "Galaxy Properties",
                       'order': 43,
                   }),
                  ('SpinGas_y', {
                       'type': np.float32,
                       'label': "Y Spin of Gas Disk",
-                      'description': "Normalised y-axis component of gas disc spin vector",
+                      'description': "Normalised y-axis component of the gas disk spin vector",
                       'group': "Galaxy Properties",
                       'order': 44,
                   }),
                  ('SpinGas_z', {
                       'type': np.float32,
                       'label': "Z Spin of Gas Disk",
-                      'description': "Normalised z-axis component of gas disc spin vector",
+                      'description': "Normalised z-axis component of the gas disk spin vector",
                       'group': "Galaxy Properties",
                       'order': 45,
                   }),
@@ -395,7 +395,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('Vvir', {
                         'type': np.float32,
                         'label': "Vvir",
-                        'description': "Virial Speed of the (sub)halo",
+                        'description': "Virial speed of the (sub)halo",
                         'group': "Halo Properties",
                         'units': "km/s",
                         'order': 48,
@@ -429,7 +429,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('Spin_x', {
                         'type': np.float32,
                         'label': "jX Halo",
-                        'description': "X-component of (sub)halo's specific angular momentum",
+                        'description': "X-component of the (sub)halo's specific angular momentum",
                         'group': "Halo Properties",
                         'units': 'Mpc/h * km/s',
                         'order': 52,
@@ -437,7 +437,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('Spin_y', {
                         'type': np.float32,
                         'label': "jY Halo",
-                        'description': "Y-component of (sub)halo's specific angular momentum",
+                        'description': "Y-component of the (sub)halo's specific angular momentum",
                         'group': "Halo Properties",
                         'units': 'Mpc/h * km/s',
                         'order': 53,
@@ -445,7 +445,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('Spin_z', {
                         'type': np.float32,
                         'label': "jZ Halo",
-                        'description': "Z-component of (sub)halo's specific angular momentum",
+                        'description': "Z-component of the (sub)halo's specific angular momentum",
                         'group': "Halo Properties",
                         'units': 'Mpc/h * km/s',
                         'order': 54,
@@ -468,7 +468,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('CentralMvir', {
                         'type': np.float32,
                         'label': "Central Galaxy Mvir",
-                        'description': "Virial mass of the central galaxy halo",
+                        'description': "Virial mass of the central-galaxy halo",
                         'group': "Halo Properties",
                         'units': "10^10 Msun/h",
                         'order': 57,
@@ -476,7 +476,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('infallMvir', {
                         'type': np.float32,
                         'label': "Subhalo Mvir at Infall",
-                        'description': "Subhalo Mvir at infall",
+                        'description': "Virial mass of the (sub)halo at infall",
                         'group': "Halo Properties",
                         'units': "10^10 Msun/h",                        
                         'order': 58,
@@ -484,7 +484,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('infallVvir', {
                         'type': np.float32,
                         'label': "Subhalo Vvir at Infall",
-                        'description': "Subhalo Vvir at infall",
+                        'description': "Virial speed of the (sub)halo at infall",
                         'group': "Halo Properties",
                         'units': "km/s",
                         'order': 59,
@@ -492,7 +492,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('infallVmax', {
                         'type': np.float32,
                         'label': "Subhalo Vmax at Infall",
-                        'description': "Subhalo Vmax at infall",
+                        'description': "Maximum circular velocity of the (sub)halo at infall",
                         'group': "Halo Properties",
                         'units': "km/s",                        
                         'order': 60,
@@ -524,7 +524,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('Vel_x', {
                         'type': np.float32,
                         'label': "X Velocity",
-                        'description': "X component of the galaxy/halo velocity",
+                        'description': "X component of the galaxy/(sub)halo velocity",
                         'group': "Positions & Velocities",
                         'units': "km/s",
                         'order': 64,
@@ -532,7 +532,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('Vel_y', {
                         'type': np.float32,
                         'label': "Y Velocity",
-                        'description': "Y component of the galaxy/halo velocity",
+                        'description': "Y component of the galaxy/(sub)halo velocity",
                         'group': "Positions & Velocities",
                         'units': "km/s",
                         'order': 65,
@@ -540,7 +540,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('Vel_z', {
                         'type': np.float32,
                         'label': "Z Velocity",
-                        'description': "Z component of the galaxy/halo velocity",
+                        'description': "Z component of the galaxy/(sub)halo velocity",
                         'group': "Positions & Velocities",
                         'units': "km/s",
                         'order': 66,
@@ -555,24 +555,21 @@ class DARKSAGEConverter(tao.Converter):
                 ('GalaxyIndex', {
                         'type': np.int64,
                         'label': "Galaxy ID",
-                        'description': "A unique ID that stays with the "\
-                            "galaxy/halo for its entire history",
+                        'description': "A unique ID that stays with the galaxy/(sub)halo for its entire history",
                         'group': "Simulation",
                         'order': 68,
                         }),
                 ('CentralGalaxyIndex', {
                         'type': np.int64,
                         'label': "Central Galaxy ID",
-                        'description': "The unique Galaxy ID of the "\
-                            "central galaxy this galaxy/halo belongs to",
+                        'description': "The unique Galaxy ID of the central galaxy this galaxy/subhalo belongs to",
                         'group': "Simulation",
                         'order': 69,
                         }),
                 ('HaloIndex', {
                         'type': np.int32,
                         'label': "Halo Index",
-                        'description': "An ID for the (sub)halo passed through "\
-                            "from the original simulation",
+                        'description': "An ID for the (sub)halo passed through from the original simulation",
                         'group': "Simulation",
                         'order': 70,
                         }),
@@ -586,8 +583,7 @@ class DARKSAGEConverter(tao.Converter):
                 ('TreeIndex', {
                         'type': np.int32,
                         'label': "Tree Index",
-                        'description': "The index for the simulation tree file "\
-                            "that this halo belongs to",
+                        'description': "The index for the simulation tree file that this (sub)halo belongs to",
                         'group': "Simulation",
                         'order': -1,
                         }),
@@ -3543,15 +3539,15 @@ class DARKSAGEConverter(tao.Converter):
         DiscRadii = np.zeros((len(tree),30))
         SigmaHI = np.zeros((len(tree),30))
         for i in range(1,31):
-            DiscRadii[:,i-1] = (tree['DiscRadii_'+str(i)]+tree['DiscRadii_'+str(i-1)])/2
-            SigmaHI[:,i-1] = tree['DiscHI_'+str(i)]/(np.pi*(tree['DiscRadii_'+str(i)]**2-tree['DiscRadii_'+str(i-1)]**2))*1e-2/h
+            DiscRadii[:,i-1] = np.sqrt((tree['DiscRadii_'+str(i)]**2+tree['DiscRadii_'+str(i-1)]**2)/2)
+            SigmaHI[:,i-1] = tree['DiscHI_'+str(i)]/(np.pi*(tree['DiscRadii_'+str(i)]**2-tree['DiscRadii_'+str(i-1)]**2))*1e-2*h
         (row, col) = np.where(SigmaHI>1.0)
         filt = np.append(np.diff(row)>0, True)
         row, col = row[filt], col[filt]
         arr = np.zeros(len(tree))
         arr[row] = DiscRadii[row,col]
         row, col = row[col<29], col[col<29]
-        arr[row] = arr[row] + np.log10(SigmaHI[row,col])/np.log10(SigmaHI[row,col+1]/SigmaHI[row,col]) * (DiscRadii[row,col+1]-DiscRadii[row,col])
+        arr[row] = arr[row] + (0-np.log10(SigmaHI[row,col]))/np.log10(SigmaHI[row,col+1]/SigmaHI[row,col]) * (DiscRadii[row,col+1]-DiscRadii[row,col])
         return arr
 
 
@@ -3563,14 +3559,14 @@ class DARKSAGEConverter(tao.Converter):
             H2 = tree['DiscH2_'+str(i)]
             w = np.where((H2>0)&(HI>0))
             ratio[w,i-1] = HI[w]/H2[w]
-            DiscRadii[:,i-1] = (tree['DiscRadii_'+str(i)]+tree['DiscRadii_'+str(i-1)])/2
+            DiscRadii[:,i-1] = np.sqrt((tree['DiscRadii_'+str(i)]**2+tree['DiscRadii_'+str(i-1)]**2)/2)
         (row, col) = np.where(ratio>1.0)
         ind = np.searchsorted(row, np.unique(row))
         row, col = row[ind], col[ind]
         arr = np.zeros(len(tree))
         arr[row] = DiscRadii[row,col]
         row, col = row[col>0], col[col>0]
-        arr[row] = arr[row] - np.log10(ratio[row,col])/np.log10(ratio[row,col]/ratio[row,col-1]) * (DiscRadii[row,col]-DiscRadii[row,col-1]) # This could be problematic if the ratio is identical in adjacent annuli
+        arr[row] = arr[row] - (np.log10(ratio[row,col])-0)/np.log10(ratio[row,col]/ratio[row,col-1]) * (DiscRadii[row,col]-DiscRadii[row,col-1])
         return arr
     
     def r50(self, tree):
@@ -3641,7 +3637,7 @@ class DARKSAGEConverter(tao.Converter):
             for i in range(1,31):
                 val += tree['DiscStars_'+str(i)][g]/DiscMass
                 if val>0.5 and tree['DiscStars_'+str(i)][g]>0 and tree['DiscStarsMetals_'+str(i)][g]>0:
-                    rad = np.append(rad, (tree['DiscRadii_'+str(i)][g]+tree['DiscRadii_'+str(i-1)][g])/2*1e3)
+                    rad = np.append(rad, np.sqrt((tree['DiscRadii_'+str(i)][g]**2+tree['DiscRadii_'+str(i-1)][g]**2)/2)*1e3)
                     Z = np.append(Z, np.log10(tree['DiscStarsMetals_'+str(i)][g]/tree['DiscStars_'+str(i)][g]))
                 if val>0.9:
                     break
