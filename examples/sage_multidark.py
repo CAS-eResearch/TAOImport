@@ -713,27 +713,27 @@ class SAGEConverter_MultiDark(tao.Converter):
                 descs[sorted_ind[ii]] = sorted_ind[jj]
 
         # Run validation on descendants
-        # for ii, desc in enumerate(descs):
-        #     if desc == -1:
-        #         this_galidx = tree['GalaxyIndex'][ii]
-        #         this_snapnum = tree['SnapNum'][ii]
+        for ii, desc in enumerate(descs):
+            if desc == -1:
+                this_galidx = tree['GalaxyIndex'][ii]
+                this_snapnum = tree['SnapNum'][ii]
 
-        #         # No descendant -> there can not be any galaxy
-        #         # with the same galaxy index at a higher snapshot
-        #         ind = (np.where((tree['GalaxyIndex'] == this_galidx) &
-        #                         (tree['SnapNum'] > this_snapnum)))[0]
-        #         msg = "desc == -1 but real descendant = {0}\n".format(ind)
-        #         if len(ind) != 0:
-        #             print("tree['GalaxyIndex'][{0}] = {1} at snapshot = {2} "
-        #                   "should be a descendant for ii = {3} with idx = {4} "
-        #                   "at snapshot = {5}".format(
-        #                     ind, tree['GalaxyIndex'][ind],
-        #                     tree['SnapNum'][ind], ii,
-        #                     this_galidx, this_snapnum))
-        #         assert len(ind) == 0, msg
-        #     else:
-        #         assert tree['SnapNum'][desc] > tree['SnapNum'][ii]
-        #         assert tree['GalaxyIndex'][desc] == tree['GalaxyIndex'][ii]
+                # No descendant -> there can not be any galaxy
+                # with the same galaxy index at a higher snapshot
+                ind = (np.where((tree['GalaxyIndex'] == this_galidx) &
+                                 (tree['SnapNum'] > this_snapnum)))[0]
+                msg = "desc == -1 but real descendant = {0}\n".format(ind)
+                if len(ind) != 0:
+                    print("tree['GalaxyIndex'][{0}] = {1} at snapshot = {2} "
+                           "should be a descendant for ii = {3} with idx = {4} "
+                           "at snapshot = {5}".format(
+                             ind, tree['GalaxyIndex'][ind],
+                             tree['SnapNum'][ind], ii,
+                             this_galidx, this_snapnum))
+                assert len(ind) == 0, msg
+        else:
+                assert tree['SnapNum'][desc] > tree['SnapNum'][ii]
+                assert tree['GalaxyIndex'][desc] == tree['GalaxyIndex'][ii]
 
         return descs
 
