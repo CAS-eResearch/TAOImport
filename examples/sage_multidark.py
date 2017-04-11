@@ -731,7 +731,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                              tree['SnapNum'][ind], ii,
                              this_galidx, this_snapnum))
                 assert len(ind) == 0, msg
-        else:
+            else:
                 assert tree['SnapNum'][desc] > tree['SnapNum'][ii]
                 assert tree['GalaxyIndex'][desc] == tree['GalaxyIndex'][ii]
 
