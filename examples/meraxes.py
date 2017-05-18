@@ -37,7 +37,7 @@ class MERAXESConverter(tao.Converter):
                         }),
                 ("Type", {
                     "type": np.int32,
-                    "label": "Galaxy type",
+                    "label": "Galaxy Classification",
                     "order": 2,
                     "units": "None",
                     "group": "Galaxy Properties",
@@ -87,7 +87,7 @@ class MERAXESConverter(tao.Converter):
                     }),
                 ("Pos_0", {
                         "type": np.float32,
-                        "label": "Subhalo X-postion",
+                        "label": "X",
                         "order": 7,
                         "units": "Mpc/h",
                         "group": "Positions & velocities",
@@ -96,7 +96,7 @@ class MERAXESConverter(tao.Converter):
                         }),
                 ("Pos_1", {
                         "type": np.float32,
-                        "label": "Subhalo Y-postion",
+                        "label": "Y",
                         "order": 8,
                         "units": "Mpc/h",
                         "group": "Positions & velocities",
@@ -105,7 +105,7 @@ class MERAXESConverter(tao.Converter):
                         }),
                 ("Pos_2", {
                         "type": np.float32,
-                        "label": "Subhalo Z-postion",
+                        "label": "Z",
                         "order": 9,
                         "units": "Mpc/h",
                         "group": "Positions & velocities",
@@ -114,7 +114,7 @@ class MERAXESConverter(tao.Converter):
                         }),
                 ("Vel_0", {
                     "type": np.float32,
-                    "label": "Subhalo X-velocity",
+                    "label": "X Velocity",
                     "order": 10,
                     "units": "km/s",
                     "group": "Positions & velocities",
@@ -123,7 +123,7 @@ class MERAXESConverter(tao.Converter):
                     }),
                 ("Vel_1", {
                     "type": np.float32,
-                    "label": "Subhalo Y-velocity",
+                    "label": "Y Velocity",
                     "order": 11,
                     "units": "km/s",
                     "group": "Positions & velocities",
@@ -132,7 +132,7 @@ class MERAXESConverter(tao.Converter):
                     }),
                 ("Vel_2", {
                     "type": np.float32,
-                    "label": "Subhalo Z-velocity",
+                    "label": "Z Velocity",
                     "order": 12,
                     "units": "km/s",
                     "group": "Positions & velocities",
@@ -149,7 +149,7 @@ class MERAXESConverter(tao.Converter):
                         }),
                 ("Mvir", {
                         "type": np.float32,
-                        "label": "Subhalo virial mass",
+                        "label": "Mvir",
                         "order": 14,
                         "units": "10^10 Msun/h",
                         "group": "Halo Properties",
@@ -157,7 +157,7 @@ class MERAXESConverter(tao.Converter):
                         }),
                 ("Rvir", {
                         "type": np.float32,
-                        "label": "Subhalo virial radius",
+                        "label": "Rvir",
                         "order": 15,
                         "units": "Mpc/h",
                         "group": "Halo Properties",
@@ -165,7 +165,7 @@ class MERAXESConverter(tao.Converter):
                         }),
                 ("Vvir", {
                         "type": np.float32,
-                        "label": "Subhalo virial velocity",
+                        "label": "Vvir",
                         "order": 16,
                         "units": "km/s",
                         "group": "Halo Properties",
@@ -173,7 +173,7 @@ class MERAXESConverter(tao.Converter):
                         }),
                 ("Vmax", {
                         "type": np.float32,
-                        "label": "Subhalo maximum circular velocity",
+                        "label": "Vmax",
                         "order": 17,
                         "units": "km/s",
                         "group": "Halo Properties",
@@ -213,7 +213,7 @@ class MERAXESConverter(tao.Converter):
                         }),
                 ("MetalsColdGas", {
                         "type": np.float32,
-                        "label": "Cold gas metals",
+                        "label": "Metals Cold Gas Mass",
                         "order": 22,
                         "units": "10^10 Msun/h",
                         "group": "Galaxy Masses",
@@ -261,7 +261,7 @@ class MERAXESConverter(tao.Converter):
                         }),
                 ("Sfr", {
                         "type": np.float32,
-                        "label": "Star formation rate",
+                        "label": "Total Star Formation Rate",
                         "order": 28,
                         "units": "solMass/yr",
                         "group": "Galaxy Properties",
