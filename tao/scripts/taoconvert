@@ -3,7 +3,6 @@ from __future__ import print_function
 import argparse, os, sys, pprint, imp, inspect, time
 import numpy as np, tao
 from tao.find_modules import find_modules
-from tao import Converter
 
 try:
     from mpi4py import MPI
@@ -22,6 +21,7 @@ except ImportError:
     MPI = None
 
 
+from tao import Converter
     
 if __name__ == '__main__':
 

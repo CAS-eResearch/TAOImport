@@ -3,15 +3,26 @@
 A control script to be used with `taoconvert` to convert SAGE output
 binary data into HDF5 input for TAO.
 """
-
+from __future__ import print_function
 import re
-import os
+import os, sys
 import numpy as np
 import tao
 from collections import OrderedDict
-from tqdm import tqdm
+from tqdm import tqdm, trange
 import h5py
 from IPython.core.debugger import Tracer
+import time
+
+# Taken from http://stackoverflow.com/questions/27779677/python-format-time-elapsed-from-seconds-to-hour-mins-and-sceconds
+def _timer(start, end):
+    hours, rem = divmod(end-start, 3600)
+    minutes, seconds = divmod(rem, 60)
+    telapsed = "{0:0>2}:{1:0>2}:{2:05.2f}".format(int(hours),
+                                                  int(minutes),
+                                                  seconds)
+    return telapsed
+
 
 class MERAXESConverter(tao.Converter):
     """Subclasses tao.Converter to perform MERAXES output conversion."""
@@ -597,7 +608,7 @@ class MERAXESConverter(tao.Converter):
         sim_data['hubble'] = hubble
         sim_data['omega_m'] = params_dict['OmegaM']
         sim_data['omega_l'] = params_dict['OmegaLambda']
-        print("sim_data = {0}".format(sim_data))
+
         return sim_data
 
 
@@ -733,7 +744,7 @@ class MERAXESConverter(tao.Converter):
 
                 tree_first_snap.fill(all_snaps[0])
 
-                for snap in tqdm(all_snaps):
+                for snap in all_snaps:
                     this_snap_group = fin['Snap{0:03d}'.format(snap)]
                     galaxies = this_snap_group['{0}/Galaxies'.\
                                                    format(this_core_group)]
@@ -817,8 +828,7 @@ class MERAXESConverter(tao.Converter):
             msg = "Could not parse any redshift values in file {0}"\
                 .format(sim_file)
             raise tao.ConversionError(msg)
-        print("Found {0} redshifts in file {1}".format(len(redshifts),
-                                                       sim_file))
+        
         return redshifts
 
     def get_mapping_table(self):
@@ -1033,13 +1043,21 @@ class MERAXESConverter(tao.Converter):
 
 
 
-     def map_tree_files_to_cores(self, nfiles):
+    def map_tree_files_to_cores(self, nfiles, ntrees=None):
         """
         Splits up the input tree files across cores (for MPI jobs)
         Otherwise, simply returns the input array of `group_strings`
 
-        Input:
-        nfiles: Number of cores used to write the input meraxes files
+        Input(s):
+        nfiles: Integer,
+                Number of files the input meraxes catalog is divided into
+        
+        ntrees: OrderedDict, default None. (future-proofing for load-balancing)
+                Number of trees per core for each input meraxes file.
+
+                Vision is to implement such that the number of trees processed
+                by each core is roughly constant (while still *only*
+                processing *exactly one* file per core)
         
         Returns: numpy array of 'cores' that this cpu needs to process
 
@@ -1052,14 +1070,23 @@ class MERAXESConverter(tao.Converter):
         comm = self.MPI.COMM_WORLD
         rank = comm.rank
         ncores = comm.size
-
+        
+        if ntrees is not None:
+            raise NotImplemented("Not implemented yet")
+            ## Implementation for load-balancing goes below
+            ## Protected by the NotImplemented currently.
+            cores = ntrees.keys()
+            ntrees_per_core = ntrees.values()
+            nfiles = len(cores)
+            totntrees = sum(ntrees_per_core)
+        
         if ncores > nfiles:
             msg = "Error: There are only {0} input files that need to be "\
                 "converted but there are {1} parallel tasks. Please use {0} "\
                 "tasks at the most(`mpirun -np {0} taoconvert ...`)"\
                 .format(nfiles, ncores)
             raise ValueError(msg)
-            
+
         
         nfiles_per_core = nfiles // ncores
         rem = nfiles % ncores
@@ -1150,19 +1177,29 @@ class MERAXESConverter(tao.Converter):
         ordered_type.extend(computed_field_list)
         src_type = np.dtype(ordered_type)
 
-        numtrees_processed = 0
-        print("totntrees = {0}".format(totntrees))
-        
         # If this is an MPI job, divide up the tasks
         core_nums_this_core = self.map_tree_files_to_cores(ncores)
         root_process = self.MPI is None or \
             (self.MPI is not None and self.MPI.COMM_WORLD.rank == 0)
+        rank = None
 
+        num_processing_cores = 1
+        if self.MPI is not None:
+            rank = np.int64(self.MPI.COMM_WORLD.rank)
+            num_processing_cores = self.MPI.COMM_WORLD.size
+            
+        if root_process:
+            print("Begun conversion of Meraxes dataset with total number "
+                  "of trees = {0}".format(totntrees))
+        
+            
         with h5py.File(sim_file, "r") as fin:
+
             
             for icore in core_nums_this_core:
+                t0 = time.time()
                 ntrees_this_core = ntrees[icore]
-                print("Working on {0} trees on core = {1}".format(ntrees_this_core, icore))
+                    
                 fin_galaxies_per_snap = dict()
                 descendant_fin_per_snap = dict()
                 for snap in snaps:
@@ -1174,11 +1211,9 @@ class MERAXESConverter(tao.Converter):
 
                 tree_fids, tree_counts, tree_offsets, tree_first_snap, ngalaxies_per_snap = self.get_tree_counts_and_offset(icore)
                 converted_ngalaxies_per_snap = np.zeros(max(snaps) + 1, dtype=np.int64)
-
-                nforests = len(tree_fids)
-
-                pbar = lambda x : tqdm(x) if root_process else x
-                for iforest in pbar(xrange(nforests)):
+                nforests = np.int64(len(tree_fids))
+                                
+                for iforest in trange(nforests, disable=not root_process):
                     forest = tree_fids[iforest]
                     
                     # number of galaxies per snapshot for this forest
@@ -1405,9 +1440,10 @@ class MERAXESConverter(tao.Converter):
                     assert bool(np.all(tree['ID'][centralind] ==
                                        tree['ID'][centralgalind])), \
                                        "Central Galaxy ID must equal GalaxyID for centrals"
-
+                                       
 
                     yield tree
+
 
                 # Now validate that *ALL* galaxies on this core
                 # were transferred
@@ -1420,6 +1456,12 @@ class MERAXESConverter(tao.Converter):
                         "snapshot".format(icore, ngalaxies_per_snap,
                                           converted_ngalaxies_per_snap)
                     Tracer()()
+                    print()
                     raise tao.ConversionError(msg)
-                    
-                        
+                
+                t1 = time.time()
+                print("Working on {0} trees on file = {1} for rank "
+                      "= {2}...done. Time taken = {3} "
+                      .format(ntrees_this_core, icore, rank, _timer(t0, t1)))
+
+                

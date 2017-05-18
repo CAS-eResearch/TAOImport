@@ -5,7 +5,7 @@ from .library import library
 from .Exporter import Exporter
 from .Mapping import Mapping
 from .xml import get_settings_xml
-# from IPython.core.debugger import Tracer
+from IPython.core.debugger import Tracer
 from collections import OrderedDict
 import os
 
@@ -226,6 +226,7 @@ class Converter(object):
             exp.set_redshifts(redshifts)
             for tree in self.iterate_trees():
                 exp.add_tree(tree)
+            print("Finished writing trees")
 
         # If this is an MPI job, then the globalindex/globaldescendants have
         # to be fixed (those indices *must* be unique across all files)
@@ -295,6 +296,7 @@ class Converter(object):
 
     def finalize_hdf5_parallel_mode(self, comm=None, verbose=False):
 
+        print("In finalize_hdf5_parallel_mode")
         if comm is None or comm.size == 1:
             return
 
@@ -307,6 +309,8 @@ class Converter(object):
             ncores = comm.size
             comm.Barrier()
 
+            assert ncores > 1
+            
             if verbose:
                 for r in xrange(ncores):
                     if r == rank:
@@ -327,8 +331,8 @@ class Converter(object):
                 assert isinstance( inputs, ( int, long ) ), msg
 
             recvbuf = np.zeros(ncores, dtype=np.int64)
-            comm.Allgather([inputs, MPI.INT64_T],
-                           [recvbuf, MPI.INT64_T])
+            comm.Allgather([inputs, MPI.LONG],
+                           [recvbuf, MPI.LONG])
             recvbuf = recvbuf.cumsum()
             if rank == 0:
                 offset = 0
@@ -413,6 +417,8 @@ class Converter(object):
             
             raise AssertionError(msg)
 
+
+        print("just before rank=0 return")
         # No offsets to fix on the root process, hence return immediately
         # The advantage is less tabbing in the following sub-section :)
         # - MS: 27/02/2017
