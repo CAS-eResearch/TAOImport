@@ -116,8 +116,12 @@ if __name__ == '__main__':
     converter.convert()
 
     # Taken from http://stackoverflow.com/questions/27779677/python-format-time-elapsed-from-seconds-to-hour-mins-and-sceconds
-    def _timer(start, end):
-        hours, rem = divmod(end-start, 3600)
+    def _timer(start, end=None):
+        timediff = start
+        if end is not None:
+            timediff = end - start
+            
+        hours, rem = divmod(timediff, 3600)
         minutes, seconds = divmod(rem, 60)
         telapsed = "{0:0>2}:{1:0>2}:{2:05.2f}".format(int(hours),
                                                       int(minutes),
@@ -143,7 +147,7 @@ if __name__ == '__main__':
         actual_cpu_time = (tend - tstart) * ncores
         parallel_efficiency = cpu_time/actual_cpu_time * 100.0
         print("Finished converting. Wall-clock time taken = {0}, total "
-              "cpu-time = {1:0.2f} seconds (parallel efficiency = {2:5.2f}%)"
-              .format(time_elapsed, cpu_time, parallel_efficiency))
+              "cpu-time = {1} seconds (parallel efficiency = {2:5.2f}%)"
+              .format(time_elapsed, _timer(cpu_time), parallel_efficiency))
 
 
