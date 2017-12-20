@@ -85,7 +85,7 @@ class GALICSConverter(tao.Converter):
                     "description": "Snapshot number"
                     }),
                 ("halo_mvir", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "Mvir",
                         "order": 8,
                         "units": "Msun",
@@ -93,7 +93,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Virial mass of the host halo"
                         }),
                 ("halo_mfof", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "Mfof",
                         "order": 9,
                         "units": "Msun",
@@ -101,7 +101,7 @@ class GALICSConverter(tao.Converter):
                         "description": "FOF mass of the host halo"
                         }),
                 ("halo_rvir", {
-                    "type": np.float32,
+                    "type": np.float64,
                     "label": "Rvir",
                     "order": 10,
                     "units": "Mpc",
@@ -109,7 +109,7 @@ class GALICSConverter(tao.Converter):
                     "description": "Virial radius of the host halo"
                     }),
                 ("disc_mgal", {
-                    "type": np.float32,
+                    "type": np.float64,
                     "label": "DiskTotalMass",
                     "order": 11,
                     "units": "Msun",
@@ -117,7 +117,7 @@ class GALICSConverter(tao.Converter):
                     "description": "Total mass of the galaxy disk"
                     }),
                 ("bulge_mgal", {
-                    "type": np.float32,
+                    "type": np.float64,
                     "label": "BulgeTotalMass",
                     "order": 12,
                     "units": "Msun",
@@ -125,7 +125,7 @@ class GALICSConverter(tao.Converter):
                     "description": "Total mass of the galaxy bulge"
                     }),
                  ("disc_mcoldgas", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "Disk ColdGas Mass",
                         "order": 13,
                         "units": "Msun",
@@ -133,7 +133,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Disk ColdGas Mass"
                         }),
                 ("bulge_mcoldgas", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "Bulge ColdGas Mass",
                         "order": 14,
                         "units": "Msun",
@@ -141,7 +141,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Bulge ColdGas Mass"
                         }),
                 ("disc_mstar", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "Disk Stellar Mass",
                         "order": 15,
                         "units": "Msun",
@@ -149,7 +149,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Disk Stellar Mass"
                         }),
                 ("bulge_mstar", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "Bulge Stellar Mass",
                         "order": 16,
                         "units": "Msun",
@@ -157,7 +157,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Bulge Stellar Mass"
                         }),
                 ("disc_mcold_metals", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "Disk MetalsMass",
                         "order": 17,
                         "units": "Msun",
@@ -165,7 +165,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Disk Metals Mass"
                         }),
                 ("bulge_mcold_metals", {
-                    "type": np.float32,
+                    "type": np.float64,
                     "label": "Disk MetalsMass",
                     "order": 18,
                     "units": "Msun",
@@ -173,7 +173,7 @@ class GALICSConverter(tao.Converter):
                     "description": "Bulge Metals Mass"
                     }),
                 ("disc_scalelength", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "DiskScaleLength",
                         "order": 19,
                         "units": "Mpc",
@@ -181,7 +181,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Scalelength of the disk"
                         }),
                 ("bulge_scalelength", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "BulgeScaleLength",
                         "order": 20,
                         "units": "Mpc",
@@ -189,7 +189,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Scalelength of the bulge"
                         }),
                 ("sfr_disk", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "SfrDisk",
                         "order": 21,
                         "units": "Msun/yr",
@@ -197,7 +197,7 @@ class GALICSConverter(tao.Converter):
                         "description": "SFR of the disk"
                         }),
                 ("sfr_bulge", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "SfrBulge",
                         "order": 22,
                         "units": "Msun/yr",
@@ -213,7 +213,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Number of (minor and major) mergers"
                         }),
                 ("Delta_t", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "Delta_t",
                         "order": 24,
                         "units": "Myr",
@@ -221,7 +221,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Duration of the SF episode"
                         }),
                 ("x_pos", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "X position",
                         "order": 25,
                         "units": "Mpc",
@@ -229,7 +229,7 @@ class GALICSConverter(tao.Converter):
                         "description": "X Position of the galaxy in the box" # fake value
                         }),
                ("y_pos", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "Y position",
                         "order": 26,
                         "units": "Mpc",
@@ -237,7 +237,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Y Position of the galaxy in the box" # fake value
                         }),
                 ("z_pos", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "Z position",
                         "order": 27,
                         "units": "Mpc",
@@ -245,7 +245,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Z Position of the galaxy in the box" # fake value
                         }),
                 ("x_vel", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "X velocity",
                         "order": 28,
                         "units": "km/s",
@@ -261,7 +261,7 @@ class GALICSConverter(tao.Converter):
                         "description": "Y velocity of the galaxy in the box" # fake value
                         }),
                 ("z_vel", {
-                        "type": np.float32,
+                        "type": np.float64,
                         "label": "Z velocity",
                         "order": 30,
                         "units": "km/s",
@@ -297,62 +297,22 @@ class GALICSConverter(tao.Converter):
 
         parser.add_argument('--trees-dir', default='.',
                             help='location of GALICS trees')
-        parser.add_argument('--galics-file', default=' Galaxies_snap94.h5',
-                            help='name of the GALICS hdf5 file')
+        parser.add_argument('--galics-file', default='Galaxies_snap', 
+                            help='Name of the galaxies file (<snapnum>.h5 will be appended to this to create the individual files corresponding to each snapshot)')
         parser.add_argument('--sim-name', help='name of the dark matter or '
                             'hydro simulation')
         parser.add_argument('--model-name', help='name of the SAM. Set to '
                             'simulation name for a hydro sim')
 
-    def read_input_params(self, fname, quiet=False):
-        """ Read in the input parameters from a GALICS hdf5 output file.
+  
 
-        Parameters
-        ----------
-        fname : str
-            Full path to input hdf5 master file.
-
-
-        Returns
-        -------
-        dict
-            All run properties.
-        """
-
-        def arr_to_value(d):
-            for k, v in d.iteritems():
-                if v.size is 1:
-                    try:
-                        d[k] = v[0]
-                    except IndexError:
-                        d[k] = v
-
-        def visitfunc(name, obj):
-            if isinstance(obj, h5.Group):
-                props_dict[name] = dict(obj.attrs.items())
-                arr_to_value(props_dict[name])
-
-
-        # Open the file for reading
-        fin = h5py.File(fname, 'r')
-
-        group = fin['InputParams']
-
-        props_dict = dict(group.attrs.items())
-        arr_to_value(props_dict)
-        group.visititems(visitfunc)
-        
-        fin.close()
-
-        return props_dict
-
-    def get_simfilename(self):
+    def get_simfilename(self, snapnum):
         if not self.args.trees_dir:
             msg = 'Must specify trees directory containing GALICS hdf5 file'
             raise tao.ConversionError(msg)
 
-        sim_file = '{0}/{1}'.format(self.args.trees_dir,
-                                    self.args.galics_file)
+        sim_file = '{0}/{1}{2:0d}.h5'.format(self.args.trees_dir,
+                                    self.args.galics_file, snapnum)
         return sim_file
         
     def get_simulation_data(self):
@@ -361,8 +321,6 @@ class GALICSConverter(tao.Converter):
         Extracts the simulation data from the GALICS parameter file and
         returns a dictionary containing the values.
         """
-        sim_file = self.get_simfilename()
-        self.sim_file = sim_file
         params_dict = self.read_input_params(sim_file)
         hubble = params_dict['Hubble_h']
         if hubble < 1.0:
@@ -378,209 +336,8 @@ class GALICSConverter(tao.Converter):
         return sim_data
 
 
-    def has_tree_counts(self):
-        sim_file = self.get_simfilename()
-        with h5py.File(sim_file, 'r') as hf:
-            keys = hf.keys()
-            if 'TreeCounts' in keys:
-                return True
-
-        return False
-
-    def get_ntrees(self):
-        r"""
-        Returns a python dictionary containing the number of trees
-        on each core.
-
-        Calculated as the number of unique forestIDs that exist at
-        the last snapshot. 
-        """
-        has_tree_counts = self.has_tree_counts()
-        ntrees = OrderedDict()
-        with h5py.File(self.get_simfilename(), "r") as fin:
-            lk = list(fin.keys())
-            all_snaps = np.asarray([k for k in lk if 'Snap' in k])
-            rev_sorted_ind = np.argsort(all_snaps)[::-1]
-            all_snaps = all_snaps[rev_sorted_ind]
-            ncores = fin.attrs['NCores'][0]
-            snap_group = fin[all_snaps[0]]
-            for icore in range(ncores):
-                this_core_group = 'Core{0:d}'.format(icore)
-                if has_tree_counts:
-                    n_trees[icore] = snap_group['{0}/NTrees'.\
-                                                    format(this_core_group)]
-                else:
-                    ntrees[icore] = 0
-                    galaxies = snap_group['{0}/Galaxies'.format(this_core_group)]
-                    last_snap_forestids = galaxies['ForestID']
-                    if len(last_snap_forestids) > 0:
-                        uniq_fids = np.unique(last_snap_forestids)
-                        ntrees[icore] = len(uniq_fids)
-                        
-        return ntrees
-
-
-    def get_tree_counts_and_offset(self, icore):
-        """
-        Returns an array of offsets and lengths into the h5py
-        file for each tree at each snapshot.
-
-        These two arrays and the snapshot fully determine the
-        galaxies of *any* tree -- i.e., the offset in the dataset
-        for that snapshot and the number of galaxies to read in.
-        
-        With a combination of source_sel and dest_sel, and appropriate
-        datatype arrays, `read_direct` can be used to assign the
-        vertical tree from the horizontal tree format.
-
-        Parameters
-        -----------
-
-        icore: integer
-             The cpu core to work on. All trees on this specified core
-             will be processed. `ntrees_this_core` refers to the total
-             number of trees at the last snapshot for this core.
-
-        Returns
-        ---------
-        forestids : array, np.int64
-             The forestIDs at the last snapshot that the following dictionaries
-             contain as keys
-        
-        tree_counts : 2-dimensional int64 array, indexed by [forest, snapshot]
-             Gives the number of galaxies per snapshot per forest.
-
-             The forests correspond to the order returned in forestids.
-        
-        tree_offsets : 2-dimensional int64 array, indexed by [forest, snapshot]
-             Gives the starting offset per forest per snapshot within the hdf5
-             snapshot dataset for that forest. The offset is the number of
-             galaxies preceeding that forest in that snapshot. The offset is
-             the number of galaxies preceeding this tree  *AND NOT* the bytes
-             offset.
-
-             The forests correspond to the order returned in forestids.
-        
-        tree_first_snap : int32 array, indexed by [forest]
-              First snapshot (highest redshift, earliest time) that the 
-              tree is present.
-
-              The forests correspond to the order returned in forestids.
-
-        ngalaxies_per_snap: int64 array of length (max(snaps) + 1), so that
-              the array can be directly indexed by the snapshot number
-              This is here to make sure that *only* the galaxies included
-              associated with the last snapshot forests are counted. 
-              
-        """
-        
-        has_tree_counts = self.has_tree_counts()
-        fn =  self.get_simfilename()
-        with h5py.File(fn, "r") as fin:
-            lk = list(fin.keys())
-            all_snaps = np.asarray([np.int32(k[-3:]) for k in lk if 'Snap' in k])
-            # Reverse sort, now snapshot traversal is identical to
-            # iteration order in `iterate_trees`
-            rev_sorted_ind = np.argsort(all_snaps)[::-1]
-            all_snaps = all_snaps[rev_sorted_ind]
-            maxsnap = max(all_snaps)
-            ncores = fin.attrs['NCores'][0]
-
-            # Take the last snapshot group (all_snaps is sorted in
-            # descending order)
-            snap_group = fin['Snap{0:03d}'.format(all_snaps[0])]
-            this_core_group = 'Core{0:d}'.format(icore)
-            ngalaxies_per_snap = np.zeros(maxsnap + 1, dtype=np.int64)
-            if has_tree_counts:
-                msg = 'GALICS does not have this property yet. Check code'
-                raise ValueError(msg)
-            else:
-                galaxies = snap_group['{0}/Galaxies'.\
-                                          format(this_core_group)]
-                last_snap_forestids = np.unique(galaxies['ForestID'])
-                last_snap_nforests = len(last_snap_forestids)
-                last_snap_forestids_to_array_index = dict()
-
-                for ii, fid in enumerate(last_snap_forestids):
-                    last_snap_forestids_to_array_index[fid] = ii
-                
-                tree_first_snap = np.empty(last_snap_nforests, dtype=np.int32)
-                tree_counts = np.zeros((last_snap_nforests, maxsnap + 1), dtype=np.int64)
-                tree_offsets = np.zeros((last_snap_nforests, maxsnap + 1), dtype=np.int64)
-
-                tree_first_snap.fill(all_snaps[0])
-
-                for snap in tqdm(all_snaps):
-                    this_snap_group = fin['Snap{0:03d}'.format(snap)]
-                    galaxies = this_snap_group['{0}/Galaxies'.\
-                                                   format(this_core_group)]
-                    forestids = galaxies['ForestID']
-                    nforests = len(forestids)
-                    if nforests > 0:
-                        
-                        sorted_uniq_fids, \
-                            orig_idx, \
-                            sorted_nhalos = np.unique(forestids, 
-                                                      return_index=True,
-                                                      return_counts=True)
-                            
-                        last_fid_inds = np.in1d(sorted_uniq_fids,
-                                                last_snap_forestids,
-                                                assume_unique=True)
-                        unique_last_forestids = np.intersect1d(
-                            last_snap_forestids,
-                            sorted_uniq_fids,
-                            assume_unique=True)
-                        unique_last_forestids_nhalos = sorted_nhalos[last_fid_inds]
-                        assert bool(np.all(sorted_uniq_fids[last_fid_inds] == unique_last_forestids))
-                        insertion_index = [last_snap_forestids_to_array_index[fid] for fid in unique_last_forestids]
-                        tree_counts[insertion_index, snap] = unique_last_forestids_nhalos
-
-                        # Check that all values in unique_last_forestids are in last_snap_forestids
-                        check_fid_inds = np.in1d(unique_last_forestids, last_snap_forestids)
-                        assert bool(np.all(check_fid_inds))
-
-                        ngalaxies_per_snap[snap] = unique_last_forestids_nhalos.sum()
-                        tree_first_snap[insertion_index] = snap
-
-                        # This is complicated offset manipulation
-                        # The sorted_nhalos corresponds to the sorted
-                        # unique forestids. However, what I need is the
-                        # offsets in "file order" forestids.
-
-                        # Sorting `orig_idx` gives me the order
-                        # of appearance of the forest within the file
-                        
-                        # Contains *ALL* forests at this snapshot
-                        # and is *AT LEAST* the same size as the final
-                        # snapshot forests. So the file offsets must be
-                        # computed over *ALL* forests, only computing over
-                        # forests at last snapshot will be wrong. 
-                        file_order = np.argsort(orig_idx)
-                        file_fids = sorted_uniq_fids[file_order]
-                        nhalos = sorted_nhalos[file_order]
-                        offsets = np.zeros(len(file_order), dtype=np.int64)
-
-                        # The first offset is *always* 0 since the
-                        # the first tree in file order *must* begin
-                        # at the 0'th array index. The first tree begins
-                        # offset = nhalos(first tree). Thus, the cumulative
-                        # sum is over the entire array, but the array is 
-                        # shifted by 1 during the assignment (ie., cumul[0]
-                        # goes to offset[1], cumul[1] goes to offset[2]) .
-                        offsets[1:] = (nhalos.cumsum())[0:-1]
-
-                        # Now simply pick the offsets for the trees
-                        # that are present at the last snapshot. However, it
-                        # is possible that some forests present at this
-                        # snapshot are *NOT* present at the final snapshot. 
-                        # So only assign for the ones that *ARE* present 
-                        tree_offsets[insertion_index, snap] = offsets[last_fid_inds]
-                        
-        return last_snap_forestids, tree_counts, tree_offsets, tree_first_snap, ngalaxies_per_snap
-
     
-    
+    # get_snapshot_redshifts to be modified to read snap z
     def get_snapshot_redshifts(self):
         """Parse and convert the expansion factors.
 
@@ -598,7 +355,6 @@ class GALICSConverter(tao.Converter):
                                                        sim_file))
         return redshifts
 
-    # what is this ?
     def get_mapping_table(self):
         """Returns a mapping from TAO fields to GALICS fields."""
 
@@ -617,6 +373,7 @@ class GALICSConverter(tao.Converter):
 
         return mapping
 
+    # Only prop to show in tao
     def get_extra_fields(self):
         """Returns a list of GALICS fields and types to include."""
         wanted_field_keys = [
@@ -668,43 +425,35 @@ class GALICSConverter(tao.Converter):
 
     def read_snaplist(self, fname):
 
-        """ Read in the list of available snapshots from the GALICS hdf5 file.
+        """ Read in the list of available snapshots from the GalicsSnaphots_list.dat file.
 
         Parameters
         ----------
         fname : str
-            Full path to input hdf5 master file.
-
+            GalicsSnaphots_list.dat
 
         Returns
         -------
-        snaps : array
-            snapshots
+        snaplist : array
+            snapshots list
 
-        redshifts : array
+        zlist : array
             redshifts
 
-        lt_times : array
-            light travel times (Myr)
         """
 
-        zlist = []
+        fname = open('GalicsSnaphots_list.dat', 'r')
+        lines = fname.readlines()
+        fname.close()
+        
         snaplist = []
-        lt_times = []
-
-        with h5py.File(fname, 'r') as fin:
-            for snap in fin.keys():
-                try:
-                    zlist.append(fin[snap].attrs['Redshift'][0])
-                    snaplist.append(int(snap[-3:]))
-                    lt_times.append(fin[snap].attrs['LTTime'][0])
-                except KeyError:
-                    pass
-                
-        lt_times = np.array(lt_times, dtype=float)
-
-        return np.array(snaplist, dtype=int), np.array(zlist, dtype=float),\
-            lt_times
+        zlist    = []
+        for line in lines:
+            p = line.split()
+            snaplist.append(int(p[0]))
+            zlist.append(np.float64(p[1]))
+               
+        return np.array(snaplist, dtype=int), np.array(zlist, dtype=np.float64)
 
 
     def GalaxyType(self, tree):
@@ -714,6 +463,9 @@ class GALICSConverter(tao.Converter):
         """
         return np.zeros(len(tree), dtype=np.int16)
 
+
+    
+    # leave it here but dont touch
     def copy_array_fields(self, src_tree, dest_tree, fieldname, shape):
         """
         Copies fields that are arrays into individual elements
