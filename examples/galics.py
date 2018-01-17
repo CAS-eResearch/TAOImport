@@ -4,6 +4,7 @@ A control script to be used with `taoconvert` to convert SAGE output
 binary data into HDF5 input for TAO.
 """
 
+
 import re
 import os
 import numpy as np
@@ -19,487 +20,262 @@ class GALICSConverter(tao.Converter):
 
     def __init__(self, *args, **kwargs):
         src_fields_dict = OrderedDict([
-                ("id_MBP", {
+                ("galaxyID", {
                         "type": np.int64,
-                        "label": "MBP ID",
+                        "label": "galaxyID",
                         "order": 0,
                         "units": "None",
-                        "group": "Halo Properties",
-                        "description": "Most-bound particle ID"
+                        "group": "Galaxy Properties",
+                        "description": "Galaxy ID" # unique in the whole simulation
                         }),
-                ("ID", {
+                ("g_treeID", {
                         "type": np.int64,
-                        "label": "Galaxy ID",
+                        "label": "galaxy Tree ID",
                         "order": 1,
                         "units": "None",
                         "group": "Galaxy Properties",
-                        "description": "Unique galaxy ID"
+                        "description": "Tree ID" # galaxy tree ID
                         }),
-                ("Type", {
-                    "type": np.int32,
-                    "label": "Galaxy Classification",
+                ("g_haloID", {
+                    "type": np.int64,
+                    "label": "galaxy's halo ID",
                     "order": 2,
                     "units": "None",
-                    "group": "Galaxy Properties",
-                    "description": "Galaxy type: 0->Central, 1->Satellite, "\
-                        "2->Orphan"
+                    "group": "Halo Properties",
+                    "description": "Halo ID of the host halo"
                     }),
-                ("CentralGal", {
-                        "type": np.int32,
-                        "label": "Central galaxy index",
+                ("g_DescendantID", {
+                        "type": np.int64,
+                        "label": "Descendant ID", # ID of the galaxy's Descendant
                         "order": 3,
                         "units": "None",
                         "group": "Galaxy Properties",
-                        "description": "Index of the central galaxy of the "\
-                            "host FOF group"
+                        "description": "ID of the galaxy's descendant"
                         }),
-                ("GhostFlag", {
-                    "type": np.int32,
-                    "label": "Ghost galaxy flag",
+                ("g_FirstProgenitorID", {
+                    "type": np.int64,
+                    "label": "FirstProgenitor ID", # ID of the galaxy's FirstProgenitor
                     "order": 4,
                     "units": "None",
                     "group": "Galaxy Properties",
-                    "description": "Ghost galaxy flag: 0->Host identified, 1->Ghost"
+                    "description": "ID of the galaxy's First Progenitor"
                     }),
-                ("Len", {
-                        "type": np.int32,
-                        "label": "Particle number",
+                ("g_NextProgenitorID", {
+                        "type": np.int64,
+                        "label": "NextProgenitor ID", # ID of the galaxy's NextProgenitor
                         "order": 5,
                         "units": "None",
-                        "group": "Halo Properties",
-                        "description": "Number of particles in host subhalo"
+                        "group": "Galaxy Properties",
+                        "description": "ID of the galaxy's Next Progenitor"
                         }),
-                ("MaxLen", {
-                    "type": np.int32,
-                    "label": "Maximum particle number",
+                ("g_LastProgenitorID", {
+                    "type": np.int64,
+                    "label": "LastProgenitor ID", # ID of the galaxy's LastProgenitor
                     "order": 6,
                     "units": "None",
-                    "group": "Halo Properties",
-                    "description": "Maximum number of particles in host subhalo"
+                    "group": "Galaxy Properties",
+                    "description": "ID of the galaxy's Last Progenitor"
                     }),
-                ("PhysicsFlags", {
-                    "type": np.int32,
-                    "label": "Physics debug flags",
-                    "order": -1,
+                ("SnapNum", {
+                    "type": np.int16,
+                    "label": "Snapshot number",
+                    "order": 7,
                     "units": "None",
-                    "group": "Internal",
-                    "description": "Debugging flags for physical recipes"
+                    "group": "Simulation",
+                    "description": "Snapshot number"
                     }),
-                ("Pos_0", {
-                        "type": np.float32,
-                        "label": "X",
-                        "order": 7,
-                        "units": "Mpc/h",
-                        "group": "Positions & velocities",
-                        "description": "Position of host subhalo at snapshot "\
-                            "when last identified"
-                        }),
-                ("Pos_1", {
-                        "type": np.float32,
-                        "label": "Y",
-                        "order": 8,
-                        "units": "Mpc/h",
-                        "group": "Positions & velocities",
-                        "description": "Position of host subhalo at snapshot "\
-                            "when last identified"
-                        }),
-                ("Pos_2", {
-                        "type": np.float32,
-                        "label": "Z",
-                        "order": 9,
-                        "units": "Mpc/h",
-                        "group": "Positions & velocities",
-                        "description": "Position of host subhalo at snapshot "\
-                            "when last identified"
-                        }),
-                ("Vel_0", {
-                    "type": np.float32,
-                    "label": "X Velocity",
-                    "order": 10,
-                    "units": "km/s",
-                    "group": "Positions & velocities",
-                    "description": "Comoving velocity of subhalo at last "\
-                        "snapshot identified"
-                    }),
-                ("Vel_1", {
-                    "type": np.float32,
-                    "label": "Y Velocity",
-                    "order": 11,
-                    "units": "km/s",
-                    "group": "Positions & velocities",
-                    "description": "Comoving velocity of subhalo at last "\
-                        "snapshot identified"
-                    }),
-                ("Vel_2", {
-                    "type": np.float32,
-                    "label": "Z Velocity",
-                    "order": 12,
-                    "units": "km/s",
-                    "group": "Positions & velocities",
-                    "description": "Comoving velocity of subhalo at last "\
-                        "snapshot identified"
-                    }),
-                 ("Spin", {
-                        "type": np.float32,
-                        "label": "Subhalo spin",
-                        "order": 13,
-                        "units": "None",
-                        "group": "Halo Properties",
-                        "description": "Bullock style lambda parameter"
-                        }),
-                ("Mvir", {
-                        "type": np.float32,
+                ("halo_mvir", {
+                        "type": np.float64,
                         "label": "Mvir",
-                        "order": 14,
-                        "units": "10^10 Msun/h",
+                        "order": 8,
+                        "units": "Msun",
                         "group": "Halo Properties",
-                        "description": "Virial mass of host subhalo"
+                        "description": "Virial mass of the host halo"
                         }),
-                ("Rvir", {
-                        "type": np.float32,
-                        "label": "Rvir",
-                        "order": 15,
-                        "units": "Mpc/h",
+                ("halo_mfof", {
+                        "type": np.float64,
+                        "label": "Mfof",
+                        "order": 9,
+                        "units": "Msun",
                         "group": "Halo Properties",
-                        "description": "Virial radius of host subhalo"
+                        "description": "FOF mass of the host halo"
                         }),
-                ("Vvir", {
-                        "type": np.float32,
-                        "label": "Vvir",
-                        "order": 16,
-                        "units": "km/s",
-                        "group": "Halo Properties",
-                        "description": "Virial velocity of host subhalo"
-                        }),
-                ("Vmax", {
-                        "type": np.float32,
-                        "label": "Vmax",
-                        "order": 17,
-                        "units": "km/s",
-                        "group": "Halo Properties",
-                        "description": "Maximum circular velocity of host subhalo"
-                        }),
-                ("FOFMvir", {
-                    "type": np.float32,
-                    "label": "FOF virial mass",
-                    "order": 18,
-                    "units": "10^10 Msun/h",
+                ("halo_rvir", {
+                    "type": np.float64,
+                    "label": "Rvir",
+                    "order": 10,
+                    "units": "Mpc",
                     "group": "Halo Properties",
-                    "description": "Virial mass of the host friends-of-friends group"
+                    "description": "Virial radius of the host halo"
                     }),
-                ("HotGas", {
-                        "type": np.float32,
-                        "label": "Hot gas mass",
+                ("disc_mgal", {
+                    "type": np.float64,
+                    "label": "DiskTotalMass",
+                    "order": 11,
+                    "units": "Msun",
+                    "group": "Galaxy Masses",
+                    "description": "Total mass of the galaxy disk"
+                    }),
+                ("bulge_mgal", {
+                    "type": np.float64,
+                    "label": "BulgeTotalMass",
+                    "order": 12,
+                    "units": "Msun",
+                    "group": "Galaxy Masses",
+                    "description": "Total mass of the galaxy bulge"
+                    }),
+                 ("disc_mcoldgas", {
+                        "type": np.float64,
+                        "label": "Disk ColdGas Mass",
+                        "order": 13,
+                        "units": "Msun",
+                        "group": "Galaxy Masses",
+                        "description": "Disk ColdGas Mass"
+                        }),
+                ("bulge_mcoldgas", {
+                        "type": np.float64,
+                        "label": "Bulge ColdGas Mass",
+                        "order": 14,
+                        "units": "Msun",
+                        "group": "Galaxy Masses",
+                        "description": "Bulge ColdGas Mass"
+                        }),
+                ("disc_mstar", {
+                        "type": np.float64,
+                        "label": "Disk Stellar Mass",
+                        "order": 15,
+                        "units": "Msun",
+                        "group": "Galaxy Masses",
+                        "description": "Disk Stellar Mass"
+                        }),
+                ("bulge_mstar", {
+                        "type": np.float64,
+                        "label": "Bulge Stellar Mass",
+                        "order": 16,
+                        "units": "Msun",
+                        "group": "Galaxy Masses",
+                        "description": "Bulge Stellar Mass"
+                        }),
+                ("disc_mcold_metals", {
+                        "type": np.float64,
+                        "label": "Disk MetalsMass",
+                        "order": 17,
+                        "units": "Msun",
+                        "group": "Galaxy Masses",
+                        "description": "Disk Metals Mass"
+                        }),
+                ("bulge_mcold_metals", {
+                    "type": np.float64,
+                    "label": "Disk MetalsMass",
+                    "order": 18,
+                    "units": "Msun",
+                    "group": "Galaxy Masses",
+                    "description": "Bulge Metals Mass"
+                    }),
+                ("disc_scalelength", {
+                        "type": np.float64,
+                        "label": "DiskScaleLength",
                         "order": 19,
-                        "units": "10^10 Msun/h",
-                        "group": "Galaxy Masses",
-                        "description": "Mass of hot gas"
+                        "units": "Mpc",
+                        "group": "Galaxy Properties",
+                        "description": "Scalelength of the disk"
                         }),
-                ("MetalsHotGas", {
-                        "type": np.float32,
-                        "label": "Hot metals mass",
+                ("bulge_scalelength", {
+                        "type": np.float64,
+                        "label": "BulgeScaleLength",
                         "order": 20,
-                        "units": "10^10 Msun/h",
-                        "group": "Galaxy Masses",
-                        "description": "Mass of metals contained within hot gas component"
+                        "units": "Mpc",
+                        "group": "Galaxy Properties",
+                        "description": "Scalelength of the bulge"
                         }),
-                ("ColdGas", {
-                        "type": np.float32,
-                        "label": "Cold gas mass",
+                ("sfr_disk", {
+                        "type": np.float64,
+                        "label": "SfrDisk",
                         "order": 21,
-                        "units": "10^10 Msun/h",
-                        "group": "Galaxy Masses",
-                        "description": "Mass of cold gas"
+                        "units": "Msun/yr",
+                        "group": "Galaxy Properties",
+                        "description": "SFR of the disk"
                         }),
-                ("MetalsColdGas", {
-                        "type": np.float32,
-                        "label": "Metals Cold Gas Mass",
+                ("sfr_bulge", {
+                        "type": np.float64,
+                        "label": "SfrBulge",
                         "order": 22,
-                        "units": "10^10 Msun/h",
-                        "group": "Galaxy Masses",
-                        "description": "Mass of metals contained within cold gas component"
+                        "units": "Msun/yr",
+                        "group": "Galaxy Properties",
+                        "description": "SFR of the bulge"
                         }),
-                ("Mcool", {
-                        "type": np.float32,
-                        "label": "Cooling mass",
+                ("nb_merg", {
+                        "type": np.int16,
+                        "label": "Number of mergers",
                         "order": 23,
-                        "units": "10^10 Msun/h",
-                        "group": "Galaxy Masses",
-                        "description": "Mass of baryons cooling onto the galaxy in current timestep"
+                        "units": "None",
+                        "group": "Galaxy Properties",
+                        "description": "Number of (minor and major) mergers"
                         }),
-                ("DiskScaleLength", {
-                        "type": np.float32,
-                        "label": "Disk scale length",
+                ("Delta_t", {
+                        "type": np.float64,
+                        "label": "Delta_t",
                         "order": 24,
-                        "units": "Mpc/h",
+                        "units": "Myr",
                         "group": "Galaxy Properties",
-                        "description": "Scale length of the galaxy disk"
+                        "description": "Duration of the SF episode"
                         }),
-                ("StellarMass", {
-                        "type": np.float32,
-                        "label": "Stellar mass",
+                ("x_pos", {
+                        "type": np.float64,
+                        "label": "X position",
                         "order": 25,
-                        "units": "10^10 Msun/h",
-                        "group": "Galaxy Masses",
-                        "description": "Galaxy stellar mass"
+                        "units": "Mpc",
+                        "group": "Positions & velocities",
+                        "description": "X Position of the galaxy in the box" # fake value
                         }),
-                ("GrossStellarMass", {
-                        "type": np.float32,
-                        "label": "Gross stellar mass",
+               ("y_pos", {
+                        "type": np.float64,
+                        "label": "Y position",
                         "order": 26,
-                        "units": "10^10 Msun/h",
-                        "group": "Galaxy Masses",
-                        "description": "Galaxy stellar mass excluding SN mass loss"
+                        "units": "Mpc",
+                        "group": "Positions & velocities",
+                        "description": "Y Position of the galaxy in the box" # fake value
                         }),
-                ("MetalsStellarMass", {
-                        "type": np.float32,
-                        "label": "Stellar metals",
+                ("z_pos", {
+                        "type": np.float64,
+                        "label": "Z position",
                         "order": 27,
-                        "units": "10^10 Msun/h",
-                        "group": "Galaxy Masses",
-                        "description": "Mass of metals in stellar component"
+                        "units": "Mpc",
+                        "group": "Positions & velocities",
+                        "description": "Z Position of the galaxy in the box" # fake value
                         }),
-                ("Sfr", {
-                        "type": np.float32,
-                        "label": "Total Star Formation Rate",
+                ("x_vel", {
+                        "type": np.float64,
+                        "label": "X velocity",
                         "order": 28,
-                        "units": "solMass/yr",
-                        "group": "Galaxy Properties",
-                        "description": "Galaxy star formation rate"
+                        "units": "km/s",
+                        "group": "Positions & velocities",
+                        "description": "X velocity of the galaxy in the box" # fake value
                         }),
-                ("EjectedGas", {
+                ("y_vel", {
                         "type": np.float32,
-                        "label": "Ejected gas",
+                        "label": "Y velocity",
                         "order": 29,
-                        "units": "10^10 Msun/h",
-                        "group": "Galaxy Masses",
-                        "description": "Mass of gas ejected from system in current timestep"
+                        "units": "km/s",
+                        "group": "Positions & velocities",
+                        "description": "Y velocity of the galaxy in the box" # fake value
                         }),
-                ("MetalsEjectedGas", {
-                        "type": np.float32,
-                        "label": "Ejected metals",
+                ("z_vel", {
+                        "type": np.float64,
+                        "label": "Z velocity",
                         "order": 30,
-                        "units": "10^10 Msun/h",
-                        "group": "Galaxy Masses",
-                        "description": "Mass of metals in ejected component"
+                        "units": "km/s",
+                        "group": "Positions & velocities",
+                        "description": "Z velocity of the galaxy in the box" # fake value
                         }),
-                ("BlackHoleMass", {
-                        "type": np.float32,
-                        "label": "Black hole mass",
-                        "order": -1,
-                        "units": "10^10 Msun/h",
-                        "group": "Internal",
-                        "description": "Currently unused"
-                        }),
-                ("MaxReheatFrac", {
-                        "type": np.float32,
-                        "label": "Maximum reheated mass fraction",
-                        "order": -1,
-                        "units": "None",
-                        "group": "Internal",
-                        "description": "Debugging property"
-                        }),
-                ("MaxEjectFrac", {
-                        "type": np.float32,
-                        "label": "Maximum ejected mass fraction",
-                        "order": -1,
-                        "units": "None",
-                        "group": "Internal",
-                        "description": "Debugging property"
-                        }),
-                ("Rcool", {
-                        "type": np.float32,
-                        "label": "Cooling radius",
+                ("GalaxyType", {
+                        "type": np.int16,
+                        "label": "Galaxy type",
                         "order": 31,
-                        "units": "Mpc/h",
-                        "group": "Galaxy Properties",
-                        "description": "Cooling radius"
-                        }),
-                ("Cos_Inc", {
-                        "type": np.float32,
-                        "label": "Disk inclination",
-                        "order": 32,
                         "units": "None",
                         "group": "Galaxy Properties",
-                        "description": "Inclination of galaxy disk (random)"
-                        }),
-                ("MergTime", {
-                        "type": np.float32,
-                        "label": "Time remaining until merger",
-                        "order": -1,
-                        "units": "Myr/h",
-                        "group": "Internal",
-                        "description": "Time remaining until merger"
-                        }),
-                ("MergerStartRadius", {
-                        "type": np.float32,
-                        "label": "Merger start radius",
-                        "order": -1,
-                        "units": "Mpc/h",
-                        "group": "Internal",
-                        "description": "Radius at which host halo lost"
-                        }),
-                ("BaryonFracModifier", {
-                        "type": np.float32,
-                        "label": "Baryon fraction modifier",
-                        "order": 33,
-                        "units": "None",
-                        "group": "Galaxy Properties",
-                        "description": "Fractional modification to the infalling baryon mass due to photoionization supression from the UVB."
-                        }),
-                ("MvirCrit", {
-                        "type": np.float32,
-                        "label": "Critical virial mass for photo supression",
-                        "order": 34,
-                        "units": "10^10 Msun/h",
-                        "group": "Galaxy Properties",
-                        "description": "The halo mass at which 50% of baronic infall would be supressed, given the intensity of the local UVB."
-                        }),
-                ("MWMSA", {
-                        "type": np.float32,
-                        "label": "Mass weighted mean stellar age",
-                        "order": 35,
-                        "units": "Myr/h",
-                        "group": "Galaxy Properties",
-                        "description": "The mass weighted mean stellar age of the galaxy"
-                        }),
-                ("NewStars_0", {
-                        "type": np.float32,
-                        "label": "New stars",
-                        "order": -1,
-                        "units": "10^10 Msun/h",
-                        "group": "Internal",
-                        "description": "The stars formed in this snapshot."
-                        }),
-                ("NewStars_1", {
-                        "type": np.float32,
-                        "label": "New stars",
-                        "order": -1,
-                        "units": "10^10 Msun/h",
-                        "group": "Internal",
-                        "description": "The stars formed in current snapshot - 1."
-                        }),
-                ("NewStars_2", {
-                        "type": np.float32,
-                        "label": "New stars",
-                        "order": -1,
-                        "units": "10^10 Msun/h",
-                        "group": "Internal",
-                        "description": "The stars formed in current snapshot - 2."
-                        }),
-                ("NewStars_3", {
-                        "type": np.float32,
-                        "label": "New stars",
-                        "order": -1,
-                        "units": "10^10 Msun/h",
-                        "group": "Internal",
-                        "description": "The stars formed in current snapshot - 3."
-                        }),
-                ("NewStars_4", {
-                        "type": np.float32,
-                        "label": "New stars",
-                        "order": -1,
-                        "units": "10^10 Msun/h",
-                        "group": "Internal",
-                        "description": "The stars formed in current snapshot - 4."
-                        }),
-                ('snapnum', {
-                        'type': np.int32,
-                        'label': "Snapshot Number",
-                        'description': "Snapshot number in the simulation",
-                        'group': "Simulation",
-                        'order': 36,
-                        }),
-                ('sfrdisk', {
-                        'type': np.float32,
-                        'label': "Star Formation Rate in the Disk",
-                        'description': "Star formation rate in the disk",
-                        'group': "Internal",
-                        'units': "Msun/year",
-                        'order': -1,
-                        }),
-                ('sfrbulge', {
-                        'type': np.float32,
-                        'label': "Star formation Rate in the Bulge",
-                        'description': "Star formation rate in the bulge",
-                        'group': "Internal",
-                        'units': "Msun/year",
-                        'order': -1,
-                        }),
-                ('sfrdiskz', {
-                        'type': np.float32,
-                        'label': "Avg. Metallicity of Star-forming Disk Gas",
-                        'description': "Metallicty of star forming disk gas "\
-                            "(averaged over timesteps between two snapshots)"\
-                            "(Mass of metals)/(Mass of star forming disk gas)",
-                        'group': "Internal",
-                        'units': "fraction",
-                        'order': -1,
-                        }),
-                ('sfrbulgez', {
-                        'type': np.float32,
-                        'label': "Avg. Metallicity of Star-forming Bulge Gas",
-                        'description': "Metallicty of star forming bulge gas "\
-                            "(averaged over timesteps between two snapshots)"\
-                            "(Mass of metals)/(Mass of star forming bulge gas)",
-                        'group': "Internal",
-                        'units': "fraction",
-                        'order': -1,
-                        }),
-                ('Vpeak', {
-                        'type': np.float32,
-                        'label': "Maximum circular velocity of the halo",
-                        'description': "Maximum circular velocity attained "
-                        "in the assembly history (susceptible to spikes "
-                        "during mergers, see Vrelax for a better property)",
-                        'group': "Halo Properties",
-                        'units': "km/s",
-                        'order': 37,
-                        }),
-                ('mergeIntoID', {
-                        'type': np.int32,
-                        'label': "Descendant Galaxy Index",
-                        'description': "Index for the descendant galaxy "\
-                            "after a merger",
-                        'group': "Internal",
-                        'order': 38,
-                        }),
-                ('mergeIntoSnapNum', {
-                        'type': np.int32,
-                        'label': "Descendant Snapshot",
-                        'description': "Snapshot for the descendant galaxy",
-                        'group': "Internal",
-                        'order': 39,
-                        }),
-                ('mergetype', {
-                        'type': np.int32,
-                        'label': "Merger Type",
-                        'description': "Merger type: "\
-                            "0=none; 1=minor merger; 2=major merger; "\
-                            "3=disk instability; 4=disrupt to ICS",
-                        'group': "Internal",
-                        'order': 40,
-                        }),
-                ('dT', {
-                        'type': np.float32,
-                        'label': "Galaxy Age",
-                        'group': "Internal",
-                        'order': 41,
-                        }),
-                
-                ('Descendant', {
-                        'description': 'Tree-local index of the descendant ',
-                        'type': np.int32,
-                        'group': "Internal",
-                        'order': 42,
-                        }),
-                ("GalaxyIndex", {
-                        "type": np.int64,
-                        "order": 43,
-                        "units": "None",
-                        "group": "Internal",
-                        }),
-                
+                        "description": "0:central, 2: satellite" # fake value
+                        })
                  ])
 
         self.src_fields_dict = src_fields_dict
@@ -521,62 +297,22 @@ class GALICSConverter(tao.Converter):
 
         parser.add_argument('--trees-dir', default='.',
                             help='location of GALICS trees')
-        parser.add_argument('--galics-file', default='galics.hdf5',
-                            help='name of the GALICS hdf5 file')
+        parser.add_argument('--galics-file', default='Galaxies_snap', 
+                            help='Name of the galaxies file (<snapnum>.h5 will be appended to this to create the individual files corresponding to each snapshot)')
         parser.add_argument('--sim-name', help='name of the dark matter or '
                             'hydro simulation')
         parser.add_argument('--model-name', help='name of the SAM. Set to '
                             'simulation name for a hydro sim')
 
-    def read_input_params(self, fname, quiet=False):
-        """ Read in the input parameters from a GALICS hdf5 output file.
+  
 
-        Parameters
-        ----------
-        fname : str
-            Full path to input hdf5 master file.
-
-
-        Returns
-        -------
-        dict
-            All run properties.
-        """
-
-        def arr_to_value(d):
-            for k, v in d.iteritems():
-                if v.size is 1:
-                    try:
-                        d[k] = v[0]
-                    except IndexError:
-                        d[k] = v
-
-        def visitfunc(name, obj):
-            if isinstance(obj, h5.Group):
-                props_dict[name] = dict(obj.attrs.items())
-                arr_to_value(props_dict[name])
-
-
-        # Open the file for reading
-        fin = h5py.File(fname, 'r')
-
-        group = fin['InputParams']
-
-        props_dict = dict(group.attrs.items())
-        arr_to_value(props_dict)
-        group.visititems(visitfunc)
-        
-        fin.close()
-
-        return props_dict
-
-    def get_simfilename(self):
+    def get_simfilename(self, snapnum):
         if not self.args.trees_dir:
             msg = 'Must specify trees directory containing GALICS hdf5 file'
             raise tao.ConversionError(msg)
 
-        sim_file = '{0}/{1}'.format(self.args.trees_dir,
-                                    self.args.galics_file)
+        sim_file = '{0}/{1}{2:0d}.h5'.format(self.args.trees_dir,
+                                    self.args.galics_file, snapnum)
         return sim_file
         
     def get_simulation_data(self):
@@ -585,8 +321,6 @@ class GALICSConverter(tao.Converter):
         Extracts the simulation data from the GALICS parameter file and
         returns a dictionary containing the values.
         """
-        sim_file = self.get_simfilename()
-        self.sim_file = sim_file
         params_dict = self.read_input_params(sim_file)
         hubble = params_dict['Hubble_h']
         if hubble < 1.0:
@@ -602,209 +336,8 @@ class GALICSConverter(tao.Converter):
         return sim_data
 
 
-    def has_tree_counts(self):
-        sim_file = self.get_simfilename()
-        with h5py.File(sim_file, 'r') as hf:
-            keys = hf.keys()
-            if 'TreeCounts' in keys:
-                return True
-
-        return False
-
-    def get_ntrees(self):
-        r"""
-        Returns a python dictionary containing the number of trees
-        on each core.
-
-        Calculated as the number of unique forestIDs that exist at
-        the last snapshot. 
-        """
-        has_tree_counts = self.has_tree_counts()
-        ntrees = OrderedDict()
-        with h5py.File(self.get_simfilename(), "r") as fin:
-            lk = list(fin.keys())
-            all_snaps = np.asarray([k for k in lk if 'Snap' in k])
-            rev_sorted_ind = np.argsort(all_snaps)[::-1]
-            all_snaps = all_snaps[rev_sorted_ind]
-            ncores = fin.attrs['NCores'][0]
-            snap_group = fin[all_snaps[0]]
-            for icore in range(ncores):
-                this_core_group = 'Core{0:d}'.format(icore)
-                if has_tree_counts:
-                    n_trees[icore] = snap_group['{0}/NTrees'.\
-                                                    format(this_core_group)]
-                else:
-                    ntrees[icore] = 0
-                    galaxies = snap_group['{0}/Galaxies'.format(this_core_group)]
-                    last_snap_forestids = galaxies['ForestID']
-                    if len(last_snap_forestids) > 0:
-                        uniq_fids = np.unique(last_snap_forestids)
-                        ntrees[icore] = len(uniq_fids)
-                        
-        return ntrees
-
-
-    def get_tree_counts_and_offset(self, icore):
-        r"""
-        Returns an array of offsets and lengths into the h5py
-        file for each tree at each snapshot.
-
-        These two arrays and the snapshot fully determine the
-        galaxies of *any* tree -- i.e., the offset in the dataset
-        for that snapshot and the number of galaxies to read in.
-        
-        With a combination of source_sel and dest_sel, and appropriate
-        datatype arrays, `read_direct` can be used to assign the
-        vertical tree from the horizontal tree format.
-
-        Parameters
-        -----------
-
-        icore: integer
-             The cpu core to work on. All trees on this specified core
-             will be processed. `ntrees_this_core` refers to the total
-             number of trees at the last snapshot for this core.
-
-        Returns
-        ---------
-        forestids : array, np.int64
-             The forestIDs at the last snapshot that the following dictionaries
-             contain as keys
-        
-        tree_counts : 2-dimensional int64 array, indexed by [forest, snapshot]
-             Gives the number of galaxies per snapshot per forest.
-
-             The forests correspond to the order returned in forestids.
-        
-        tree_offsets : 2-dimensional int64 array, indexed by [forest, snapshot]
-             Gives the starting offset per forest per snapshot within the hdf5
-             snapshot dataset for that forest. The offset is the number of
-             galaxies preceeding that forest in that snapshot. The offset is
-             the number of galaxies preceeding this tree  *AND NOT* the bytes
-             offset.
-
-             The forests correspond to the order returned in forestids.
-        
-        tree_first_snap : int32 array, indexed by [forest]
-              First snapshot (highest redshift, earliest time) that the 
-              tree is present.
-
-              The forests correspond to the order returned in forestids.
-
-        ngalaxies_per_snap: int64 array of length (max(snaps) + 1), so that
-              the array can be directly indexed by the snapshot number
-              This is here to make sure that *only* the galaxies included
-              associated with the last snapshot forests are counted. 
-              
-        """
-        
-        has_tree_counts = self.has_tree_counts()
-        fn =  self.get_simfilename()
-        with h5py.File(fn, "r") as fin:
-            lk = list(fin.keys())
-            all_snaps = np.asarray([np.int32(k[-3:]) for k in lk if 'Snap' in k])
-            # Reverse sort, now snapshot traversal is identical to
-            # iteration order in `iterate_trees`
-            rev_sorted_ind = np.argsort(all_snaps)[::-1]
-            all_snaps = all_snaps[rev_sorted_ind]
-            maxsnap = max(all_snaps)
-            ncores = fin.attrs['NCores'][0]
-
-            # Take the last snapshot group (all_snaps is sorted in
-            # descending order)
-            snap_group = fin['Snap{0:03d}'.format(all_snaps[0])]
-            this_core_group = 'Core{0:d}'.format(icore)
-            ngalaxies_per_snap = np.zeros(maxsnap + 1, dtype=np.int64)
-            if has_tree_counts:
-                msg = 'GALICS does not have this property yet. Check code'
-                raise ValueError(msg)
-            else:
-                galaxies = snap_group['{0}/Galaxies'.\
-                                          format(this_core_group)]
-                last_snap_forestids = np.unique(galaxies['ForestID'])
-                last_snap_nforests = len(last_snap_forestids)
-                last_snap_forestids_to_array_index = dict()
-
-                for ii, fid in enumerate(last_snap_forestids):
-                    last_snap_forestids_to_array_index[fid] = ii
-                
-                tree_first_snap = np.empty(last_snap_nforests, dtype=np.int32)
-                tree_counts = np.zeros((last_snap_nforests, maxsnap + 1), dtype=np.int64)
-                tree_offsets = np.zeros((last_snap_nforests, maxsnap + 1), dtype=np.int64)
-
-                tree_first_snap.fill(all_snaps[0])
-
-                for snap in tqdm(all_snaps):
-                    this_snap_group = fin['Snap{0:03d}'.format(snap)]
-                    galaxies = this_snap_group['{0}/Galaxies'.\
-                                                   format(this_core_group)]
-                    forestids = galaxies['ForestID']
-                    nforests = len(forestids)
-                    if nforests > 0:
-                        
-                        sorted_uniq_fids, \
-                            orig_idx, \
-                            sorted_nhalos = np.unique(forestids, 
-                                                      return_index=True,
-                                                      return_counts=True)
-                            
-                        last_fid_inds = np.in1d(sorted_uniq_fids,
-                                                last_snap_forestids,
-                                                assume_unique=True)
-                        unique_last_forestids = np.intersect1d(
-                            last_snap_forestids,
-                            sorted_uniq_fids,
-                            assume_unique=True)
-                        unique_last_forestids_nhalos = sorted_nhalos[last_fid_inds]
-                        assert bool(np.all(sorted_uniq_fids[last_fid_inds] == unique_last_forestids))
-                        insertion_index = [last_snap_forestids_to_array_index[fid] for fid in unique_last_forestids]
-                        tree_counts[insertion_index, snap] = unique_last_forestids_nhalos
-
-                        # Check that all values in unique_last_forestids are in last_snap_forestids
-                        check_fid_inds = np.in1d(unique_last_forestids, last_snap_forestids)
-                        assert bool(np.all(check_fid_inds))
-
-                        ngalaxies_per_snap[snap] = unique_last_forestids_nhalos.sum()
-                        tree_first_snap[insertion_index] = snap
-
-                        # This is complicated offset manipulation
-                        # The sorted_nhalos corresponds to the sorted
-                        # unique forestids. However, what I need is the
-                        # offsets in "file order" forestids.
-
-                        # Sorting `orig_idx` gives me the order
-                        # of appearance of the forest within the file
-                        
-                        # Contains *ALL* forests at this snapshot
-                        # and is *AT LEAST* the same size as the final
-                        # snapshot forests. So the file offsets must be
-                        # computed over *ALL* forests, only computing over
-                        # forests at last snapshot will be wrong. 
-                        file_order = np.argsort(orig_idx)
-                        file_fids = sorted_uniq_fids[file_order]
-                        nhalos = sorted_nhalos[file_order]
-                        offsets = np.zeros(len(file_order), dtype=np.int64)
-
-                        # The first offset is *always* 0 since the
-                        # the first tree in file order *must* begin
-                        # at the 0'th array index. The first tree begins
-                        # offset = nhalos(first tree). Thus, the cumulative
-                        # sum is over the entire array, but the array is 
-                        # shifted by 1 during the assignment (ie., cumul[0]
-                        # goes to offset[1], cumul[1] goes to offset[2]) .
-                        offsets[1:] = (nhalos.cumsum())[0:-1]
-
-                        # Now simply pick the offsets for the trees
-                        # that are present at the last snapshot. However, it
-                        # is possible that some forests present at this
-                        # snapshot are *NOT* present at the final snapshot. 
-                        # So only assign for the ones that *ARE* present 
-                        tree_offsets[insertion_index, snap] = offsets[last_fid_inds]
-                        
-        return last_snap_forestids, tree_counts, tree_offsets, tree_first_snap, ngalaxies_per_snap
-
     
-    
+    # get_snapshot_redshifts to be modified to read snap z
     def get_snapshot_redshifts(self):
         """Parse and convert the expansion factors.
 
@@ -825,75 +358,56 @@ class GALICSConverter(tao.Converter):
     def get_mapping_table(self):
         """Returns a mapping from TAO fields to GALICS fields."""
 
-        mapping = {'posx': 'Pos_0',
-                   'posy': 'Pos_1',
-                   'posz': 'Pos_2',
-                   'velx': 'Vel_0',
-                   'vely': 'Vel_1',
-                   'velz': 'Vel_2',
-                   'coldgas': 'ColdGas',
-                   'metalscoldgas': 'MetalsColdGas',
-                   'diskscaleradius': 'DiskScaleLength',
-                   'objecttype': 'Type',
-                   'descendant':'Descendant',
-                   'dt': 'dT',
+        mapping = {'posx': 'x_pos',
+                   'posy': 'y_pos',
+                   'posz': 'z_pos',
+                   'velx': 'x_vel',
+                   'vely': 'y_vel',
+                   'velz': 'z_vel',
+                   'coldgas': 'disc_mcoldgas',
+                   'metalscoldgas': 'disc_mcold_metals',
+                   'diskscaleradius': 'disc_scalelength',
+                   'objecttype': 'GalaxyType',
+                   'dt': 'Delta_t',
                    }
 
         return mapping
 
+    # Only prop to show in tao
     def get_extra_fields(self):
         """Returns a list of GALICS fields and types to include."""
         wanted_field_keys = [
-            "id_MBP",
-            "ID",
-            "snapnum",
-            "Type",
-            "CentralGal",
-            "GhostFlag",
-            "Len",
-            "MaxLen",
-            "PhysicsFlags",
-            "Spin",
-            "Mvir",
-            "Rvir",
-            "Vvir",
-            "Vmax",
-            "FOFMvir",
-            "HotGas",
-            "MetalsHotGas",
-            # "ColdGas",
-            # "MetalsColdGas",
-            "Mcool",
-            "DiskScaleLength",
-            "StellarMass",
-            "GrossStellarMass",
-            "MetalsStellarMass",
-            "Sfr",
-            "EjectedGas",
-            "MetalsEjectedGas",
-            "BlackHoleMass",
-            "MaxReheatFrac",
-            "MaxEjectFrac",
-            "Rcool",
-            "Cos_Inc",
-            "MergTime",
-            "MergerStartRadius",
-            "BaryonFracModifier",
-            "MvirCrit",
-            "MWMSA",
-            "NewStars_0",
-            "NewStars_1",
-            "NewStars_2",
-            "NewStars_3",
-            "NewStars_4",
-            'sfrdisk',
-            'sfrbulge',
-            'sfrdiskz', 
-            'sfrbulgez', 
-            "mergeIntoID",
-            "mergetype",
-            'mergeIntoSnapNum',
-            'GalaxyIndex',
+            "galaxyID",
+            "g_treeID",
+            "g_haloID",
+            "g_DescendantID",
+            "g_FirstProgenitorID",
+            "g_NextProgenitorID",
+            "SnapNum",
+            "halo_mvir",
+            "halo_mfof",
+            "halo_rvir",
+            "disc_mgal",
+            "bulge_mgal",
+            "disc_mcoldgas",
+            "bulge_mcoldgas",
+            "disc_mstar",
+            "bulge_mstar",
+            "disc_mcold_metals",
+            "bulge_mcold_metals",
+            "disc_scalelength",
+            "bulge_scalelength",
+            "sfr_disk",
+            "sfr_bulge",
+            "nb_merg",
+            "Delta_t",
+            "x_pos",
+            "y_pos",
+            "z_pos",
+            "x_vel",
+            "y_vel",
+            "z_vel",
+            "GalaxyType",
             ]
 
         fields = OrderedDict()
@@ -911,95 +425,47 @@ class GALICSConverter(tao.Converter):
 
     def read_snaplist(self, fname):
 
-        """ Read in the list of available snapshots from the GALICS hdf5 file.
+        """ Read in the list of available snapshots from the GalicsSnaphots_list.dat file.
 
         Parameters
         ----------
         fname : str
-            Full path to input hdf5 master file.
-
+            GalicsSnaphots_list.dat
 
         Returns
         -------
-        snaps : array
-            snapshots
+        snaplist : array
+            snapshots list
 
-        redshifts : array
+        zlist : array
             redshifts
 
-        lt_times : array
-            light travel times (Myr)
         """
 
-        zlist = []
+        fname = open('GalicsSnaphots_list.dat', 'r')
+        lines = fname.readlines()
+        fname.close()
+        
         snaplist = []
-        lt_times = []
-
-        with h5py.File(fname, 'r') as fin:
-            for snap in fin.keys():
-                try:
-                    zlist.append(fin[snap].attrs['Redshift'][0])
-                    snaplist.append(int(snap[-3:]))
-                    lt_times.append(fin[snap].attrs['LTTime'][0])
-                except KeyError:
-                    pass
-                
-        lt_times = np.array(lt_times, dtype=float)
-
-        return np.array(snaplist, dtype=int), np.array(zlist, dtype=float),\
-            lt_times
+        zlist    = []
+        for line in lines:
+            p = line.split()
+            snaplist.append(int(p[0]))
+            zlist.append(np.float64(p[1]))
+               
+        return np.array(snaplist, dtype=int), np.array(zlist, dtype=np.float64)
 
 
-    def Vpeak(self, tree):
+    def GalaxyType(self, tree):
         """
-        Calculates the max. of Vmax during the halo history
-        """
-        vpeak = np.empty(len(tree), np.float32)
-
-        # By pre-filling vpeak with Vmax, I don't have to
-        # worry about cases where there are no descendants
-        # (although the code should cover that case)
-        vpeak[:] = tree['Vmax']
-
-        sorted_ind = np.argsort(tree, order=('ID', 'snapnum'))
-        all_vmax = tree['Vmax']
-        all_gal_idx = tree['ID']
-        vmax = []
-        curr_idx = all_gal_idx[sorted_ind[0]]
-        for ii, idx in enumerate(all_gal_idx[sorted_ind]):
-            if curr_idx != idx:
-                vmax = []
-                curr_idx = idx
-
-            vmax.append(all_vmax[sorted_ind[ii]])
-            vpeak[sorted_ind[ii]] = max(vmax)
-
-        return vpeak
-
-    def sfrdisk(self, tree):
-        """
-        Returns the disk SFR from GALICS.
-
-        Assumes *all* SF occurs in disks
-        """
-        return tree['Sfr']
-
-    def sfrbulge(self, tree):
-        """
-        Return bulge SFR for GALICS
-
-        Assume *NO* SF occurs in bulges
-        """
-        return np.zeros(len(tree), dtype=np.float32)
-
-    def sfrdiskz(self, tree):
-        """
-        Return avg. metallicity of star forming disk cold gas in
-        sub-steps within GALICS
+        Return a fake galaxy type (all=0) for GALICS galaxies
         
         """
-        return tree['MetalsColdGas']
+        return np.zeros(len(tree), dtype=np.int16)
 
+
+    
+    # leave it here but dont touch
     def copy_array_fields(self, src_tree, dest_tree, fieldname, shape):
         """
         Copies fields that are arrays into individual elements
@@ -1024,24 +490,12 @@ class GALICSConverter(tao.Converter):
                 dst[dest_fieldname] = fld[axis]
         
     
-    def sfrbulgez(self, tree):
-        """
-        Return avg. metallicity of star forming bulge cold gas in
-        sub-steps within GALICS
-        """
-
-        return np.zeros(len(tree), dtype=np.float32)
 
     @profile
     def iterate_trees(self):
         """Iterate over GALICS trees."""
-
-        computed_fields = {'Vpeak': self.Vpeak,
-                           'sfrdisk': self.sfrdisk,
-                           'sfrbulge': self.sfrbulge,
-                           'sfrdiskz': self.sfrdiskz,
-                           'sfrbulgez': self.sfrbulgez,
-                           'GalaxyIndex': lambda x : x['ID'],
+        # I need to "compute" the galaxy type here (fake values: all=0)
+        computed_fields = {'GalaxyType': self.GalaxyType,
                            }
         
         computed_field_list = [('snapnum',  self.src_fields_dict['snapnum']['type']),
@@ -1365,5 +819,3 @@ class GALICSConverter(tao.Converter):
                                           converted_ngalaxies_per_snap)
                     Tracer()()
                     raise tao.ConversionError(msg)
-                    
-                        
