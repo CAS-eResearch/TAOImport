@@ -327,6 +327,22 @@ class GALICSConverter(tao.Converter):
         sim_file = '{0}/{1}{2:0d}.h5'.format(self.args.trees_dir,
                                     self.args.galics_file, snapnum)
         return sim_file
+
+    def read_input_params(self,
+                          filename='../galicsInputFiles/simulation_data'):
+        
+        with open(filename, 'r') as f:
+            for line in f:
+                if line.startswith('#') continue
+
+                try:
+                    key, value, _ = line.split('#')
+                except :
+                    key, value = line.split('#')
+                    
+
+                
+        
         
     def get_simulation_data(self):
         """Extract simulation data.
@@ -562,7 +578,6 @@ class GALICSConverter(tao.Converter):
 
 
 
-    @profile
     def get_start_and_stop_indices_per_tree(uniq_tree_ids, tree_id_field,
                                             snapshots, hf_files):
 
@@ -672,7 +687,7 @@ class GALICSConverter(tao.Converter):
         
     
 
-    @profile
+    # @profile
     def iterate_trees(self):
         """Iterate over GALICS trees."""
         # I need to "compute" the galaxy type here (fake values: all=0)
