@@ -80,7 +80,10 @@ if __name__ == '__main__':
 
     # Now we can abort if the script is missing.
     if not os.path.exists(script):
-        print 'Unable to find script: "%s"'%script_fn
+        msg = 'Please provide a converter script: "taoconvert -s {0} '\
+              '(default script name is taoconv.py)"'.format(script_fn)
+        print msg
+        
         sys.exit(1)
 
     converter = converter_cls(modules, args)
