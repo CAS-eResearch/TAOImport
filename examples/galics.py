@@ -10,8 +10,7 @@ import os
 import numpy as np
 import tao
 from collections import OrderedDict
-from tqdm import tqdm
-from tqdm import trange
+from tqdm import tqdm, trange
 import h5py
 from IPython.core.debugger import Tracer
 
@@ -292,18 +291,32 @@ class GALICSConverter(tao.Converter):
           1. The directory containing GALICS output hdf5 file.
           2. The filename for the GALICS hdf5 file.
           3. The name of the simulation (dark matter/hydro).
-          4. The name of the galaxy formation model (simulation name in case of hydro)
+          4. The name of the galaxy formation model (default 'Galics')
+          5. The first snapshot to process (default 2)
+          6. The last snapshot to process  (default 94)
+          7. A boolean flag whether processing galaxies (default True, set to False to process halos)
+          
         """
-
         parser.add_argument('--trees-dir', default='.',
                             help='location of GALICS trees')
-        parser.add_argument('--galics-file', default='Galaxies_snap', 
-                            help='Name of the galaxies file (<snapnum>.h5 will be appended to this to create the individual files corresponding to each snapshot)')
+        parser.add_argument('--galics-filename', default='Galaxies_snap', 
+                            help='Name of the galaxies file (<snapnum>.h5 '\
+                                'will be appended to this to create the '\
+                                'individual files corresponding to each '\
+                                'snapshot)')
         parser.add_argument('--sim-name', help='name of the dark matter or '
                             'hydro simulation')
-        parser.add_argument('--model-name', help='name of the SAM. Set to '
-                            'simulation name for a hydro sim')
-
+        parser.add_argument('--model-name', default='Galics',
+                            help='name of the SAM. Set to '\
+                                'simulation name for a hydro sim')
+        parser.add_argument('--firstsnap', default=2,
+                            help='The first snapshot to process')
+        parser.add_argument('--lastsnap', default=94,
+                            help='The last snapshot to process')
+        parser.add_argument('--processing-galaxies', default=True,
+                            help='A boolean flag to indicate that '\
+                                'galaxies are being processed. Set to False '\
+                                'to process halos')
   
 
     def get_simfilename(self, snapnum):
@@ -442,9 +455,8 @@ class GALICSConverter(tao.Converter):
 
         """
 
-        fname = open('GalicsSnaphots_list.dat', 'r')
-        lines = fname.readlines()
-        fname.close()
+        with open('GalicsSnaphots_list.dat', 'r') as f:
+            lines = f.readlines()
         
         snaplist = []
         zlist    = []
@@ -464,6 +476,175 @@ class GALICSConverter(tao.Converter):
         return np.zeros(len(tree), dtype=np.int16)
 
 
+
+    def generate_galics_filename(inputdir, hdf5base, snapnum):
+        return '{0}/{1}{2}.h5'.format(inputdir, hdf5base, snapnum)
+
+
+    def check_and_open_all_tree_files(inputdir, hdf5base, snapshots):
+        '''
+        Create a dictionary of h5py file handles opened for reading.
+
+        The dictionary key is the snapshot number and the returned value
+        is the h5py descriptor. The input is a list of snapshot numbers
+        to locate
+        '''
+        hf_files = dict()
+
+        # Check that all the files exist
+        for snapnum in snapshots:
+            # Check that snapnum is of type integer
+            test_snapnum = snapnum
+            try:
+                test_snapnum += 1
+            except TypeError:
+                message = 'Error: Snapshot number={0} should be an integer type'\
+                    .format(snapnum)
+                print(message)
+                raise
+
+            fname = generate_galics_filename(inputdir, hdf5base, snapnum)
+            try:
+                # File exists open the file, and append to dict
+                # with the snapnum as key
+                hf = h5py.File(fname, 'r')
+                hf_files[snapnum] = hf
+            except IOError:
+                print("Could not locate the file at snapshot = {0}. "
+                      "Generated filename was = {1}".format(snapnum, fname))
+                raise
+
+        return hf_files
+
+
+    def validate_treeid_assumptions(hf_files, snapshots, tree_id_field):
+        '''
+        Validate all assumptions about the TREEID. The assumptions are:
+
+        1. TREEID uniquely identifies a tree across all snapshots (i.e., if
+        two halos/galaxies share the same TREEID, then they are in the same
+        tree). Not sure how to validate this!
+
+        2. Galaxies in a TREE are written in sequential order on a per snapshot
+        basis. All galaxies from a particular tree are written out sequentially
+        (i.e., there will not be any inter-mixing of galaxies belonging
+        to different trees).
+
+        3. The ordering of the trees is set by the TREEID order at the last
+        snapshot (usually z=0). For instance, if a tree with TREEID=XXX appears
+        before another tree with TREEID=YYYY, then *if* the TREEID=XXX tree is
+        present at any previous snapshot, then that XXX tree will be before the
+        TREEID=YYY. However, if TREEID=XXX ceases to exist, then TREEID=YYY will
+        appear in such a way that the relative ordering of trees at the last
+        snapshot is preserved.
+
+        What other assumptions are being made? -> Thibault
+
+        i) All GALAXYIDS should be unique.
+        ii) GALAXYID of descendant should be descendantid
+        iii) TREEIDS at z=0 should be unique
+        iv) GALAXYTREEIDS should also be unique
+
+
+        '''
+
+        # No error checking for now
+        return True
+
+    def read_tree_ids(uniq_tree_ids, tree_id_field,
+                      snapshots, hf_files):
+
+        for snapnum in tqdm(snapshots):
+            hf = hf_files[snapnum]
+
+            # Read-in *ALL* the treeids at this snapshot
+            treeids = hf['Galics_output'][tree_id_field][:]
+
+
+
+    @profile
+    def get_start_and_stop_indices_per_tree(uniq_tree_ids, tree_id_field,
+                                            snapshots, hf_files):
+
+        '''
+
+        Returns 2D arrays of shape (ntrees, lastsnap + 1) containing the
+        starting and stopping indices per tree per snapshot. The `start`
+        (and `stop`) indices are returned in the same order as the supplied
+        `unique tree ids`. 
+
+        '''
+        ntrees = len(uniq_tree_ids)
+        lastsnap = max(snapshots)
+        start_indices = np.empty((ntrees, lastsnap + 1), dtype=np.int)
+        stop_indices = np.empty((ntrees, lastsnap + 1), dtype=np.int)
+        ngalaxies_per_tree_per_snapshot = np.zeros((ntrees, lastsnap + 1),
+                                                   dtype=np.int)
+
+        start_indices[:] = -1
+        stop_indices[:] = -1
+
+        for snapnum in tqdm(snapshots):
+            hf = hf_files[snapnum]
+
+            # Read-in *ALL* the treeids at this snapshot
+            treeids = hf['Galics_output'][tree_id_field][:]
+
+            # Now match the treeids at this snapshot to the
+            # unique treeids
+            for treenum, tid in tqdm(enumerate(uniq_tree_ids), total=ntrees):
+                ind = (np.where(treeids == tid))[0]
+
+                # if there is no match, that means that the tree
+                # does not exist at this snapshot
+                ngals = len(ind)
+                if len(ind) == 0:
+                    continue
+
+                message = "\nThe array indices for each tree should be sequential "\
+                    "but TREEID = {0} at snapshot = {1}\nseems to be stored "\
+                    "over non-sequential indices. Check if the input GALICS "\
+                    "data are okay".format(tid, snapnum)
+
+                min_ind = ind.min()
+                max_ind = ind.max()
+                if (max_ind - min_ind) != (ngals-1):
+                    message += "\nThe difference between the max index and min "\
+                        "index for galaxies belonging to the same tree must be\n"\
+                        "the same length as the number of galaxies in that tree "\
+                        "at that snapshot. However, I find max. index = {0} and\n"\
+                        "min. index = {1} while the number of galaxies = {2}."\
+                        .format(max_ind, min_ind, ngals)
+                    message += "\nind = {0}\n".format(ind)
+                    raise AssertionError(message)
+
+
+                # Sort the array - might not be necessary
+                # but a sorted array is required for any sequential test
+                # sorting catches any repeated indices which might pass
+                # the previous (max_ind - min_ind) == (ngals - 1) test
+                ind.sort()
+
+                # Check that the array is sequential
+                # -> take a difference of consecutive elements in the
+                # sorted array. This difference should be exactly equal
+                # to 1.
+                diff1d = np.ediff1d(ind)
+
+                # There was a numpy bug where np.all did not return
+                # boolean but respected the datatype of the input array
+                # but I only want a PASS/FAIL
+                assert bool(np.all(diff1d == 1)) == True, message
+
+                # All checks have passed -> now store the start/stop/ngal indices
+                start_indices[treenum, snapnum] = min_ind
+                stop_indices[treenum, snapnum] = max_ind + 1 # Slice indices are not inclusive
+                ngalaxies_per_tree_per_snapshot[treenum, snapnum] = ngals
+
+        return start_indices, \
+            stop_indices, \
+            ngalaxies_per_tree_per_snapshot
+    
     
     # leave it here but dont touch
     def copy_array_fields(self, src_tree, dest_tree, fieldname, shape):
@@ -495,8 +676,7 @@ class GALICSConverter(tao.Converter):
     def iterate_trees(self):
         """Iterate over GALICS trees."""
         # I need to "compute" the galaxy type here (fake values: all=0)
-        computed_fields = {'GalaxyType': self.GalaxyType,
-                           }
+        computed_fields = {'GalaxyType': self.GalaxyType}
         
         computed_field_list = [('snapnum',  self.src_fields_dict['snapnum']['type']),
                                ('mergeIntoID', self.src_fields_dict['mergeIntoID']['type']),
@@ -519,8 +699,8 @@ class GALICSConverter(tao.Converter):
         sim_file = self.get_simfilename()
         params = self.read_input_params(sim_file)
         snaps, redshifts, lt_times = self.read_snaplist(sim_file)
-        ! param file : cosmo, box size etc => see read_simulation
-        ! ascii snapshots+redshift list
+        #param file : cosmo, box size etc => see read_simulation
+        #ascii snapshots+redshift list
         rev_sorted_ind = np.argsort(snaps)[::-1]
         snaps = snaps[rev_sorted_ind]
         redshift = redshifts[rev_sorted_ind]
@@ -528,8 +708,7 @@ class GALICSConverter(tao.Converter):
         dt_values = np.ediff1d(lt_times, to_begin=lt_times[0])
 
 
-
-        !! 
+        
         ntrees = self.get_ntrees()
         totntrees = sum(ntrees.values())
 
@@ -549,273 +728,187 @@ class GALICSConverter(tao.Converter):
                     for k in range(shape[0]):
                         ordered_type.append(('{0}_{1}'.format(name, k), typ))
 
-
         ordered_type.extend(computed_field_list)
         src_type = np.dtype(ordered_type)
 
-        numtrees_processed = 0
-        print("totntrees = {0}".format(totntrees))
 
-        with h5py.File(sim_file, "r") as fin:
+        # First create the list snapshots, the '- 1' in the second parameter
+        # is required otherwise the first snapshot will not be included.
+        # This is intentionally ordered from the last snapshot backwards
+        # because that's how the vertical tree structure is usually processed
+        snapshots = np.arange(lastsnap, firstsnap - 1, step=-1, dtype=np.int)
 
-            for icore in range(ncores):
-                ntrees_this_core = ntrees[icore]
-                print("Working on {0} trees on core = {1}".format(ntrees_this_core, icore))
-                fin_galaxies_per_snap = dict()
-                descendant_fin_per_snap = dict()
-                for snap in snaps:
-                    fin_galaxies_per_snap[snap] = fin['Snap{0:03d}/Core{1:d}/Galaxies'.
-                                                      format(snap, icore)]
-                    if snap != max(snaps):
-                        descendant_fin_per_snap[snap] = fin['Snap{0:03d}/Core{1:d}/DescendantIndices'.
-                                                            format(snap, icore)]
+        # Now check if all the relevant files exist and open them with h5py
+        # Result is a dictionary of h5py file handles
+        hf_files = check_and_open_all_tree_files(inputdir, hdf5base, snapshots)
 
-                tree_fids, tree_counts, tree_offsets, tree_first_snap, ngalaxies_per_snap = self.get_tree_counts_and_offset(icore)
-                converted_ngalaxies_per_snap = np.zeros(max(snaps) + 1, dtype=np.int64)
+        # Are we processing galaxies or halos -> set the Unique ID field
+        # appropriately
+        if processing_galaxies:
+            unique_id_field = 'GALAXYID'
+            tree_id_field = 'G_TREEID'
+            desc_id_field = 'G_DESCENDANTID'
+        else:
+            unique_id_field = 'HALOID'
+            tree_id_field = 'TREEID'
+            desc_id_field = 'DESCENDANTID'
 
-                nforests = len(tree_fids)
+        # Files are open -> validate the tree assumptions are not being violated
+        # This is a PASS/FAIL test.
+        validate_treeid_assumptions(hf_files, snapshots, tree_id_field)
 
-                # trange is shortcut for tqdm( [x]range(length))
-                for iforest in trange(nforests, total=nforests):
-                    forest = tree_fids[iforest]
-                    
-                    # number of galaxies per snapshot for this forest
-                    ngalaxies = tree_counts[iforest]
+        # Get the list of TREEIDS at the last snapshot
+        hf = hf_files[lastsnap]
+        input_type = hf['Galics_output'].dtype
+        treeids = hf['Galics_output'][tree_id_field][:]
 
-                    # array offset per snapshot for this forest within the
-                    # hdf5 dataset
-                    offsets = tree_offsets[iforest]
+        # Find the unique set of TREEIDS. These unique tree ids will
+        # provide the basis for processing the data one tree at a time.
+        uniq_tree_ids = np.unique(treeids)
+        ntrees = uniq_tree_ids.size
 
-                    # total number of galaxies in the forest
-                    # (the sum is over snapshots)
-                    tree_size = ngalaxies.sum()
-                    if tree_size == 0:
-                        msg = "Number of galaxies in forest # {0} with "\
-                            "ForestID = {1} is 0. Bug in code"\
-                            .format(iforest, forest)
-                        print(msg)
-                        Tracer()()
-                    
-                    # print("Working on forest = {0} on core = {1}. Tree size = {2}".format(forest, icore, tree_size))
-                    tree = np.empty(tree_size, dtype=src_type)
-                    
-                    offs = 0
-                    first_snap = tree_first_snap[iforest]
-                    good_snaps = np.arange(snaps[0], first_snap-1, -1)
-                    ngalaxies_future_snap = 0
-                    future_snap = -1
-                    for snap in good_snaps:
-                        ngalaxies_this_snap = tree_counts[iforest, snap]
-                        if ngalaxies_this_snap == 0:
-                            continue
-                        
-                        converted_ngalaxies_per_snap[snap] += ngalaxies_this_snap
-                        
-                        # print("Reading from 'Snap{0:03d}/Core{1:d}/Galaxies' ngalaxies_this_snap = {2}".
-                        #       format(snap, icore, ngalaxies_this_snap))
-                        galaxies = fin_galaxies_per_snap[snap]
-                        start_offset = tree_offsets[iforest, snap] #(vertical_tree_offsets[forest])[snap]
-                        #print("snap = {3} forest = {0} ngalaxies = {2} start_offset = {1}".format(forest, start_offset, ngalaxies_this_snap, snap))
-                        source_sel = np.s_[start_offset: start_offset + ngalaxies_this_snap]
-                        dest_sel = np.s_[offs:offs + ngalaxies_this_snap]
-                        gal_data = galaxies[source_sel]
-                        if snap != max(good_snaps):
-                            descendants = descendant_fin_per_snap[snap]
-                            descs = descendants[source_sel]
-                            
-                            # Fix the descendant offset
-                            descs[descs > -1] += (offs - prev_offset -
-                                                  ngalaxies_future_snap)
-                        else:
-                            descs = np.empty(ngalaxies_this_snap, dtype=np.int32)
-                            descs[:] = -1
+        # We have an array of unique tree ids -> let's first compute the starting
+        # and stopping indices for each tree at each snapshot
+        # start_indices, \
+        #     stop_indices, \
+        #     ngalaxies_per_tree_per_snapshot = \
+        #     get_start_and_stop_indices_per_tree(uniq_tree_ids, tree_id_field,
+        #                                         snapshots, hf_files)
 
-                        
-                        if len(gal_data) != ngalaxies_this_snap:
-                            Tracer()()
+        read_tree_ids(uniq_tree_ids, tree_id_field, snapshots, hf_files)
 
-                        tree[dest_sel] = gal_data
-                        tree[dest_sel]['snapnum'] = snap
-                        tree[dest_sel]['Descendant'] = descs
+        return
 
-                        for (fieldname, shape) in array_fields:
-                            self.copy_array_fields(gal_data, tree[dest_sel],
-                                                   fieldname, shape)
+        # Get the number of galaxies per tree -> this is simply a sum (per tree)
+        # over the number of galaxies per snapshot
+        ngalaxies_per_tree = ngalaxies_per_tree_per_snapshot.sum(axis=1)
 
-                        this_centrals = tree['CentralGal'][dest_sel]
-                        centralgalind = (np.where(this_centrals >= 0))[0]
-                        prev_offset = tree_offsets[iforest, snap]
-                        if len(centralgalind) > 0:
-                            min_this_centrals = min(this_centrals[centralgalind])
-                            if (min_this_centrals + offs - prev_offset) < 0:
-                                msg = "ERROR: Shifting centralgals will result "\
-                                    "in negative indices. min_this_centrals = {0}"\
-                                    "offs = {1} prev_offset = {2}"\
-                                    .format(min_this_centrals,
-                                            offs,
-                                            prev_offset)
-                                raise ValueError(msg)
-                            
-                            this_centrals[centralgalind] += (offs - prev_offset)
-                        
-                        # Check and set  centralgal offsets
-                        tree[dest_sel]['CentralGal'] = this_centrals
-                        if len(centralgalind) > 0:
-                            if (min(this_centrals[centralgalind]) < offs) or \
-                                    (max(this_centrals) >= offs + ngalaxies_this_snap):
-                                msg = 'Error: Centrals at snap = {0} must be within '\
-                                    'offs = {1} and offs + chunksize = {2}. '\
-                                    'Central lies in range [{3}, {4}]. \n'\
-                                    'Galaxies["CentralGal"] is in range [{5}, {6}] \n'\
-                                    'this_centrals = {7}'\
-                                    .format(snap, offs, offs+ngalaxies_this_snap,
-                                            min(this_centrals[centralgalind]), max(this_centrals),
-                                            min(galaxies['CentralGal']), max(galaxies['CentralGal']),
-                                            this_centrals)
-                                    
-                                raise ValueError(msg)
-
-                        # The processing is done with the latest snapshot first
-                        # and then backwards in time. Thus, ngalaxies_future_snap
-                        # contains the number of galaxies in snapshot that has
-                        # already been processed
-                        future_snap = snap
-                        ngalaxies_future_snap = ngalaxies_this_snap
-                        future_snap_index_offset = (offs - prev_offset)
-                            
-                        offs += ngalaxies_this_snap
-                        if offs > tree_size:
-                            msg = 'For tree = {0}, the start offset can at most be '\
-                                'the tree size = {1}. However, offset = {2} has '\
-                                'occurred. Bug in code'.format(itree, tree_size,
-                                                               offs)
-                            raise ValueError(msg)
-              
-                                      
-                    # The entire forest has been loaded
-                    if offs != tree_size:
-                        msg = "For tree = {0}, expected to find total number of "\
-                            "halos = {1} but during loading found = {2} instead"\
-                            .format(itree, tree_size, offs)
-                        raise AssertionError(msg)
-
-                    # Validate that only one forest has been loaded.
-                    min_forestid = min(tree['ForestID'])
-                    max_forestid = max(tree['ForestID'])
-                    if min_forestid != max_forestid or min_forestid != forest:
-                        msg = 'Error during loading a single forest as a '\
-                            'vertical tree. Expected to find one single '\
-                            'forestID. Instead min(forestID) = {0} and '\
-                            'max(forestID) = {1}'.format(min_forestid,
-                                                         max_forestid)
-                        raise AssertionError(msg)
-                    
-                    # Fix NAN's in MWMSA (mass-weighted mean stellar age)
-                    nan_ind = np.isnan(tree['MWMSA'])
-                    tree['MWMSA'][nan_ind] = 0.0
-                            
-                    # One tree has been completely loaded (vertical tree now)
-                    for fieldname, conv_func in computed_fields.items():
-                        tree[fieldname] = conv_func(tree)
+        # Check that snapshots is reverse sorted
+        # Because the descendants are matched by DescendantID
+        # -> the descendant galaxy *MUST* already be loaded. This
+        # can only happen in the snapshots are processed in reverse
+        # sorted order, i.e., last snapshot is processed first and then
+        # we go back in time.
+        message = "BUG: Snapshots must be processed from the last snapshot "\
+            "to the first"
+        assert bool(np.all(np.ediff1d(snapshots) < 0)), message
 
 
-                    # Since I need to use the descendants now, I have to validate
-                    # the indices. For *any* galaxy, the descendant should be 
-                    # -1, or a valid index in the next snapshot [0, ngalaxies[nextsnap])
-                    # When a valid index is present, is found the galaxy id must
-                    # either equal current galaxyid. If the equality is not satisfied
-                    # then a merger has occurred and *all* future snapshots including
-                    # `nextsnap`  *can not* contain current galaxyid.
+        # Verify that unique IDs are actually unique
+        ids = hf['Galics_output'][unique_id_field]
+        unique_ids = np.unique(ids)
+        message = "Unique IDs are expected for the field = `{0}` "\
+            "But the array size is = {1} while the number of unique "\
+            "values = {2}".format(unique_id_field, len(ids),
+                                  len(unique_ids))
 
-                    # Validate Descendants and Populate the "merger" fields required
-                    # for the SED module. Needs to be in a converter_function
-                    # but 4 fields are being updated by one function. Ideally
-                    # the converter function itself should be the key and
-                    # the values should the list of fields
-                        
-                    tree['mergeIntoID'] = -1
-                    tree['mergeIntoSnapNum'] = -1
-                    tree['mergetype'] = 0
-                    for gal in tree:
-                        gid, d = gal['ID'], gal['Descendant']
-                        # no valid descendant, nothing to verify
-                        if d == -1:
-                            continue
+        assert len(unique_ids) == len(unique_ids), message
 
-                        if gid == tree['ID'][d]:
-                            # The galaxy continues as itself
-                            gal['mergeIntoID'] = -1
-                            gal['mergeIntoSnapNum'] = -1
-                            gal['mergetype'] = 0
-                            continue
-                        
-                        else:
-                            
-                            ind = (np.where((tree['snapnum'] > gal['snapnum']) &
-                                           (tree['ID'] == gid)))[0]
-                            if len(ind) > 0:
-                                msg = 'Error: Galaxy with ID = {0} '\
-                                     'at snapshot = {1} has descendant ID = '\
-                                     '{2} (which is different) but this galaxy '\
-                                     'exists at future snapshots. Num Tree matches '\
-                                     'in the future snaps = {3}. snaps = {4} with '\
-                                     'iD = {5}'.format(gid, gal['snapnum'],
-                                                       tree['ID'][d], len(ind),
-                                                       tree['snapnum'][ind],
-                                                       tree['ID'][ind])
-                                Tracer()()
-                                raise tao.ConversionError(msg)
-                            
-                            gal['mergeIntoID'] = tree['ID'][d]
-                            gal['mergeIntoSnapNum'] = tree['snapnum'][d]
-                            gal['mergetype'] = 2
-                    
-                    
-                    # Populate the field with galaxy ages (required by TAO SED module) 
-                    tree['dT'] = dt_values[tree['snapnum']]
+        # Create the source datatype based on all the fields in the input
+        # + any other computed fields etc that might be getting pulled through
+        # INCORRECTLY set to input type for now:
+        src_type = input_type
 
-                    # First validate some fields.
-                    for f in ['Type', 'ID', 'snapnum']:
-                        if min(tree[f]) < 0:
-                            msg = "ERROR; min(tree[{0}]) = {1} should be non-zero "\
-                                .format(f, min(tree[f]))
+        # Tree validation passed -> process one tree at a time. 
+        for treenum, tid in tqdm(enumerate(uniq_tree_ids), total=ntrees):
+            # print("Working on treenum = {0}".format(treenum))
 
-                            ind = (np.where(tree[f] < 0))[0]
-                            msg += "tree[f] = {0}".format(tree[ind][f])
-                            msg += "tree[snapnum] = {0}".format(tree[ind]['snapnum'])
-                            raise ValueError(msg)
-                        
-                    # Validate central galaxy index (unique id, generated by sage)
-                    centralind = (np.where((tree['Type'] == 0) & (tree['CentralGal'] >= 0)))[0]
-                    centralgalind = tree[centralind]['CentralGal']
-                    if not bool(np.all(tree['ID'][centralind] ==
-                                       tree['ID'][centralgalind])):
-                        print("tree[ID][centralind] = {0}".format(tree['ID'][centralind]))
-                        print("tree[ID][centralgalind] = {0}".format(tree['ID'][centralgalind]))
-                        print("centralind = {0}".format(centralind))
-                        print("tree['snapnum'][centralind] = {0}".format(tree['snapnum'][centralind]))
-                        print("tree['Type'][centralind] = {0}".format(tree['Type'][centralind]))
-                        badind = tree['ID'][centralind] != tree['ID'][centralgalind]
-                        print("badind = {0} len(bad) = {1}".format(badind, len(badind)))
-                        print("tree[ID][c[b]] = {0}".format(tree['ID'][centralind[badind]]))
-                        print("tree[ID][cg[b]] = {0}".format(tree['ID'][centralgalind[badind]]))
-                              
-                    assert bool(np.all(tree['ID'][centralind] ==
-                                       tree['ID'][centralgalind])), \
-                                       "Central Galaxy ID must equal GalaxyID for centrals"
+            # First create the numpy array to hold the vertical tree
+            # The input data type must be that specified in the hdf5 file
+            tree = np.empty(ngalaxies_per_tree[treenum], dtype=src_type)
+
+            # For each tree, loop over all snapshots
+            # First create the array with number of
+            # galaxies per snapshot for this tree
+            ngals_per_snap = ngalaxies_per_tree_per_snapshot[treenum, :]
+            message = "Error: Number of elements in the array should be "\
+                "equal to the last snapshot number + 1. This allows direct "\
+                "indexing by the snapshot number. However, the shape is "\
+                "{0} rather than {1}==(lastsnap + 1)".format(len(ngals_per_snap),
+                                                             lastsnap + 1)
+            assert len(ngals_per_snap) == (lastsnap + 1), message
+
+            # The offset in the vertical tree -> the
+            # starting index for storing at a snapshot
+            offs = 0
+            for snapnum in snapshots:
+                hf = hf_files[snapnum]
+                galaxies = hf['Galics_output']
+                start = start_indices[treenum, snapnum]
+                stop = stop_indices[treenum, snapnum]
+                ngalaxies_this_snap = ngals_per_snap[snapnum]
+
+                ## Gather the individual fields 
+                source_sel = np.s_[start:stop]
+                dest_sel = np.s_[offs:offs + ngalaxies_this_snap]
+                gal_data = galaxies[source_sel]
+                message = 'BUG: Range of array indices=[{0}, {1}] do not '\
+                    'agree with the number of galaxies expected = {2}.\n'\
+                    'Please check the function `get_start_and_stop_indices_per_tree`'\
+                    .format(start, stop, ngalaxies_this_snap)
+                assert (stop - start) == ngalaxies_this_snap, message
+
+                descs = np.empty(ngalaxies_this_snap, dtype=np.int32)
+                descs[:] = -1
+
+                if snapnum < lastsnap:
+                    descids = gal_data[desc_id_field]
+
+                    # Find the objects (halos/galaxies) that do have
+                    # descendants (usually descid is set to -1 to
+                    # signify no descendant but I am checking for
+                    # non-zero positive values as a conservative method)
+                    good_desc = (np.where(descids >= 0))[0]
+                    if len(good_desc) > 0:
+                        # now match descendantids to the unique ids at the
+                        # next snapshot
+                        for s, d in zip(good_desc, descids[good_desc]):
+                            ii = (np.where(future_snap_uniqueid == d))[0]
+                            # Is there a match?
+                            if len(ii) == 0:
+                                message = "Error: Could not find descendant for "\
+                                    "galaxy with ID = {0} at snapshot = {1}. "\
+                                    "descendantID = {2} at the next snapshot"\
+                                    .format(gal_data[s][unique_id_field],
+                                            snapnum, d)
+                                raise AssertionError(message)
+
+                            # Is there exactly one match?
+                            if len(ii) > 1:
+                                message = "Error: Found multiple descendants for "\
+                                    "galaxy with ID = {0} at snapshot = {1}. "\
+                                    "descendantID = {2} at the next snapshot\n"\
+                                    "Matched indices = {3}"\
+                                    .format(gal_data[s][unique_id_field],
+                                            snapnum, d, ii)
+                                raise AssertionError(message)
+
+                            descs[s] = ii
+
+                # All the data have been read-in and calculated
+                # assign to the existing arrays
+                message = 'gal_data = {0}\ndest_sel={1}\nsource_sel={2}'\
+                    .format(gal_data, dest_sel, source_sel)
+                assert gal_data.shape == tree[dest_sel].shape, message
+                tree[dest_sel] = gal_data
+                # tree[dest_sel]['snapnum'] = snapnum
+                # tree[dest_sel]['Descendant'] = descs
+
+                # Store the Unique IDs to match for descendants
+                # at the previous snapshot (which will be the
+                # next iteration)
+                future_snap_uniqueid = gal_data[unique_id_field]
+
+                # Update the number of galaxies read in so far
+                # for this tree
+                offs += ngalaxies_this_snap
+
+                # print("tree = {0}".format(tree))
+                # print("Working on treenum = {0}....done".format(treenum))
+                # yield tree
 
 
-                    yield tree
+        # Close all the open 'snapshot' files
+        for _, hf in hf_files.items():
+            hf.close()
 
-                # Now validate that *ALL* galaxies on this core
-                # were transferred
-                # print("ngalaxies_per_snap = {0}\n".format(ngalaxies_per_snap))
-                if not bool(np.all(ngalaxies_per_snap ==
-                                   converted_ngalaxies_per_snap)):
-                    msg = "Error: Did not convert *all* galaxies for core "\
-                        "= {0}.\nExpected to convert = {1} galaxies per "\
-                        "snapshot.\nInstead converted = {2} galaxies per "\
-                        "snapshot".format(icore, ngalaxies_per_snap,
-                                          converted_ngalaxies_per_snap)
-                    Tracer()()
-                    raise tao.ConversionError(msg)
