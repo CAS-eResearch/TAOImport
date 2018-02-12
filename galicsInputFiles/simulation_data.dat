@@ -1,5 +1,0 @@
-# File containing information about the simulation used for GALICS model
-Hubble_h    = 0.702
-BoxSize     = 100   # in unit of h^-1 (cMpc)
-OmegaM      = 0.277
-OmegaLambda = 0.723
