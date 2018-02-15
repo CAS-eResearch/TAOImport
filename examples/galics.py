@@ -13,13 +13,16 @@ from collections import OrderedDict
 from tqdm import tqdm, trange
 import h5py
 from IPython.core.debugger import Tracer
+import warnings
+from os.path import join as pjoin
+
 
 class GALICSConverter(tao.Converter):
     """Subclasses tao.Converter to perform GALICS output conversion."""
 
     def __init__(self, *args, **kwargs):
         src_fields_dict = OrderedDict([
-                ("galaxyID", {
+                ("GALAXYID", {
                         "type": np.int64,
                         "label": "galaxyID",
                         "order": 0,
@@ -27,7 +30,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Properties",
                         "description": "Galaxy ID" # unique in the whole simulation
                         }),
-                ("g_treeID", {
+                ("G_TREEID", {
                         "type": np.int64,
                         "label": "galaxy Tree ID",
                         "order": 1,
@@ -35,7 +38,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Properties",
                         "description": "Tree ID" # galaxy tree ID
                         }),
-                ("g_haloID", {
+                ("G_HALOID", {
                     "type": np.int64,
                     "label": "galaxy's halo ID",
                     "order": 2,
@@ -43,7 +46,7 @@ class GALICSConverter(tao.Converter):
                     "group": "Halo Properties",
                     "description": "Halo ID of the host halo"
                     }),
-                ("g_DescendantID", {
+                ("G_DESCENDANTID", {
                         "type": np.int64,
                         "label": "Descendant ID", # ID of the galaxy's Descendant
                         "order": 3,
@@ -51,7 +54,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Properties",
                         "description": "ID of the galaxy's descendant"
                         }),
-                ("g_FirstProgenitorID", {
+                ("G_FIRSTPROGENITORID", {
                     "type": np.int64,
                     "label": "FirstProgenitor ID", # ID of the galaxy's FirstProgenitor
                     "order": 4,
@@ -59,7 +62,7 @@ class GALICSConverter(tao.Converter):
                     "group": "Galaxy Properties",
                     "description": "ID of the galaxy's First Progenitor"
                     }),
-                ("g_NextProgenitorID", {
+                ("G_NEXTPROGENITORID", {
                         "type": np.int64,
                         "label": "NextProgenitor ID", # ID of the galaxy's NextProgenitor
                         "order": 5,
@@ -67,7 +70,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Properties",
                         "description": "ID of the galaxy's Next Progenitor"
                         }),
-                ("g_LastProgenitorID", {
+                ("G_LASTPROGENITORID", {
                     "type": np.int64,
                     "label": "LastProgenitor ID", # ID of the galaxy's LastProgenitor
                     "order": 6,
@@ -75,7 +78,7 @@ class GALICSConverter(tao.Converter):
                     "group": "Galaxy Properties",
                     "description": "ID of the galaxy's Last Progenitor"
                     }),
-                ("SnapNum", {
+                ("SNAPNUM", {
                     "type": np.int16,
                     "label": "Snapshot number",
                     "order": 7,
@@ -83,7 +86,7 @@ class GALICSConverter(tao.Converter):
                     "group": "Simulation",
                     "description": "Snapshot number"
                     }),
-                ("halo_mvir", {
+                ("HALO_MVIR", {
                         "type": np.float64,
                         "label": "Mvir",
                         "order": 8,
@@ -91,7 +94,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Halo Properties",
                         "description": "Virial mass of the host halo"
                         }),
-                ("halo_mfof", {
+                ("HALO_MFOF", {
                         "type": np.float64,
                         "label": "Mfof",
                         "order": 9,
@@ -99,7 +102,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Halo Properties",
                         "description": "FOF mass of the host halo"
                         }),
-                ("halo_rvir", {
+                ("HALO_RVIR", {
                     "type": np.float64,
                     "label": "Rvir",
                     "order": 10,
@@ -107,7 +110,7 @@ class GALICSConverter(tao.Converter):
                     "group": "Halo Properties",
                     "description": "Virial radius of the host halo"
                     }),
-                ("disc_mgal", {
+                ("DISC_MGAL", {
                     "type": np.float64,
                     "label": "DiskTotalMass",
                     "order": 11,
@@ -115,7 +118,7 @@ class GALICSConverter(tao.Converter):
                     "group": "Galaxy Masses",
                     "description": "Total mass of the galaxy disk"
                     }),
-                ("bulge_mgal", {
+                ("BULGE_MGAL", {
                     "type": np.float64,
                     "label": "BulgeTotalMass",
                     "order": 12,
@@ -123,7 +126,7 @@ class GALICSConverter(tao.Converter):
                     "group": "Galaxy Masses",
                     "description": "Total mass of the galaxy bulge"
                     }),
-                 ("disc_mcoldgas", {
+                 ("DISC_MCOLDGAS", {
                         "type": np.float64,
                         "label": "Disk ColdGas Mass",
                         "order": 13,
@@ -131,7 +134,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Masses",
                         "description": "Disk ColdGas Mass"
                         }),
-                ("bulge_mcoldgas", {
+                ("BULGE_MCOLDGAS", {
                         "type": np.float64,
                         "label": "Bulge ColdGas Mass",
                         "order": 14,
@@ -139,7 +142,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Masses",
                         "description": "Bulge ColdGas Mass"
                         }),
-                ("disc_mstar", {
+                ("DISC_MSTAR", {
                         "type": np.float64,
                         "label": "Disk Stellar Mass",
                         "order": 15,
@@ -147,7 +150,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Masses",
                         "description": "Disk Stellar Mass"
                         }),
-                ("bulge_mstar", {
+                ("BULGE_MSTAR", {
                         "type": np.float64,
                         "label": "Bulge Stellar Mass",
                         "order": 16,
@@ -155,7 +158,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Masses",
                         "description": "Bulge Stellar Mass"
                         }),
-                ("disc_mcold_metals", {
+                ("DISC_MCOLD_METALS", {
                         "type": np.float64,
                         "label": "Disk MetalsMass",
                         "order": 17,
@@ -163,7 +166,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Masses",
                         "description": "Disk Metals Mass"
                         }),
-                ("bulge_mcold_metals", {
+                ("BULGE_MCOLD_METALS", {
                     "type": np.float64,
                     "label": "Disk MetalsMass",
                     "order": 18,
@@ -171,7 +174,7 @@ class GALICSConverter(tao.Converter):
                     "group": "Galaxy Masses",
                     "description": "Bulge Metals Mass"
                     }),
-                ("disc_scalelength", {
+                ("DISC_SCALELENGTH", {
                         "type": np.float64,
                         "label": "DiskScaleLength",
                         "order": 19,
@@ -179,7 +182,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Properties",
                         "description": "Scalelength of the disk"
                         }),
-                ("bulge_scalelength", {
+                ("BULGE_SCALELENGTH", {
                         "type": np.float64,
                         "label": "BulgeScaleLength",
                         "order": 20,
@@ -187,7 +190,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Properties",
                         "description": "Scalelength of the bulge"
                         }),
-                ("sfr_disk", {
+                ("SFR_DISK", {
                         "type": np.float64,
                         "label": "SfrDisk",
                         "order": 21,
@@ -195,7 +198,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Properties",
                         "description": "SFR of the disk"
                         }),
-                ("sfr_bulge", {
+                ("SFR_BULGE", {
                         "type": np.float64,
                         "label": "SfrBulge",
                         "order": 22,
@@ -203,7 +206,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Properties",
                         "description": "SFR of the bulge"
                         }),
-                ("nb_merg", {
+                ("NB_MERG", {
                         "type": np.int16,
                         "label": "Number of mergers",
                         "order": 23,
@@ -211,7 +214,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Properties",
                         "description": "Number of (minor and major) mergers"
                         }),
-                ("Delta_t", {
+                ("DELTA_T", {
                         "type": np.float64,
                         "label": "Delta_t",
                         "order": 24,
@@ -219,7 +222,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Galaxy Properties",
                         "description": "Duration of the SF episode"
                         }),
-                ("x_pos", {
+                ("X_POS", {
                         "type": np.float64,
                         "label": "X position",
                         "order": 25,
@@ -227,7 +230,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Positions & velocities",
                         "description": "X Position of the galaxy in the box" # fake value
                         }),
-               ("y_pos", {
+               ("Y_POS", {
                         "type": np.float64,
                         "label": "Y position",
                         "order": 26,
@@ -235,7 +238,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Positions & velocities",
                         "description": "Y Position of the galaxy in the box" # fake value
                         }),
-                ("z_pos", {
+                ("Z_POS", {
                         "type": np.float64,
                         "label": "Z position",
                         "order": 27,
@@ -243,7 +246,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Positions & velocities",
                         "description": "Z Position of the galaxy in the box" # fake value
                         }),
-                ("x_vel", {
+                ("X_VEL", {
                         "type": np.float64,
                         "label": "X velocity",
                         "order": 28,
@@ -251,7 +254,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Positions & velocities",
                         "description": "X velocity of the galaxy in the box" # fake value
                         }),
-                ("y_vel", {
+                ("Y_VEL", {
                         "type": np.float32,
                         "label": "Y velocity",
                         "order": 29,
@@ -259,7 +262,7 @@ class GALICSConverter(tao.Converter):
                         "group": "Positions & velocities",
                         "description": "Y velocity of the galaxy in the box" # fake value
                         }),
-                ("z_vel", {
+                ("Z_VEL", {
                         "type": np.float64,
                         "label": "Z velocity",
                         "order": 30,
@@ -274,12 +277,48 @@ class GALICSConverter(tao.Converter):
                         "units": "None",
                         "group": "Galaxy Properties",
                         "description": "0:central, 2: satellite" # fake value
-                        })
+                        }),
+                ("mergeIntoID", {
+                        "type": np.int32,
+                        "label": "Descendant Galaxy Index",
+                        "description": "Index for the descendant galaxy "\
+                            "after a merger",
+                        "group": "Internal",
+                        "order": 32,
+                        }),
+                ("mergeIntoSnapNum", {
+                        "type": np.int32,
+                        "label": "Descendant Snapshot",
+                        "description": "Snapshot for the descendant galaxy",
+                        "group": "Internal",
+                        "order": 33,
+                        }),
+                ("mergetype", {
+                        "type": np.int32,
+                        "label": "Merger Type",
+                        "description": "Merger type: "\
+                            "0=none; 1=minor merger; 2=major merger; "\
+                            "3=disk instability; 4=disrupt to ICS",
+                        "group": "Internal",
+                        "order": 34,
+                        }),
+                # ("dT", {
+                #         "type": np.float32,
+                #         "label": "Galaxy Age",
+                #         "group": "Internal",
+                #         "order": 35,
+                #         }),
+                ("Descendant", {
+                        'description': 'Tree-local index of the descendant ',
+                        'type': np.int32,
+                        'group': "Internal",
+                        'order': 36,
+                        }),
                  ])
 
         self.src_fields_dict = src_fields_dict
-        self.sim_file = ''
-        self.snapshots = []
+        self.cosmo_params = None
+        self.hubble = None
         super(GALICSConverter, self).__init__(*args, **kwargs)
     
 
@@ -305,13 +344,13 @@ class GALICSConverter(tao.Converter):
                                 'individual files corresponding to each '\
                                 'snapshot)')
         parser.add_argument('--sim-name', help='name of the dark matter or '
-                            'hydro simulation')
+                            'hydro simulation', default='Lyon Simulations')
         parser.add_argument('--model-name', default='Galics',
                             help='name of the SAM. Set to '\
                                 'simulation name for a hydro sim')
         parser.add_argument('--firstsnap', default=2,
                             help='The first snapshot to process')
-        parser.add_argument('--lastsnap', default=94,
+        parser.add_argument('--lastsnap', default=7,
                             help='The last snapshot to process')
         parser.add_argument('--processing-galaxies', default=True,
                             help='A boolean flag to indicate that '\
@@ -323,39 +362,48 @@ class GALICSConverter(tao.Converter):
         if not self.args.trees_dir:
             msg = 'Must specify trees directory containing GALICS hdf5 file'
             raise tao.ConversionError(msg)
-
+        
         sim_file = '{0}/{1}{2:0d}.h5'.format(self.args.trees_dir,
-                                    self.args.galics_file, snapnum)
+                                             self.args.galics_filename,
+                                             snapnum)
         return sim_file
 
+
     def read_input_params(self,
-                          filename='../galicsInputFiles/simulation_data'):
-        
+                          fn='../galicsInputFiles/simulation_data.dat'):
+        filename = pjoin(self.args.trees_dir, fn)
+        print("filename in read input params = {0}".format(filename))
         with open(filename, 'r') as f:
+            props_dict = dict()
             for line in f:
-                if line.startswith('#') continue
+                line = line.strip()
+                if line.startswith("#"): continue
 
-                try:
-                    key, value, _ = line.split('#')
-                except :
-                    key, value = line.split('#')
-                    
+                line = line.partition('#')[0]
+                key, value = line.split('=')
 
-                
-        
+                key = key.strip()
+                value = value.strip()
+
+                props_dict[key] = np.float64(value)
+
+        return props_dict
+
         
     def get_simulation_data(self):
         """Extract simulation data.
 
         Extracts the simulation data from the GALICS parameter file and
-        returns a dictionary containing the values.
+        returns a dictionary containing the values. Called by tao.Converter
         """
-        params_dict = self.read_input_params(sim_file)
+        params_dict = self.read_input_params()
+        self.cosmo_params = params_dict
         hubble = params_dict['Hubble_h']
         if hubble < 1.0:
             hubble = hubble * 100.0
         msg = 'Hubble parameter must be in physical units (not little h)'
         assert hubble > 1.0, msg
+        self.hubble = hubble
         sim_data = dict()
         sim_data['box_size'] = params_dict['BoxSize']
         sim_data['hubble'] = hubble
@@ -363,7 +411,6 @@ class GALICSConverter(tao.Converter):
         sim_data['omega_l'] = params_dict['OmegaLambda']
         print("sim_data = {0}".format(sim_data))
         return sim_data
-
 
     
     # get_snapshot_redshifts to be modified to read snap z
@@ -374,68 +421,67 @@ class GALICSConverter(tao.Converter):
         a list of redshifts in order of snapshots.
         """
 
-        sim_file = self.get_simfilename()
-        snaps, redshifts, lt_times = self.read_snaplist(sim_file)
+        snaps, redshifts, lt_times = self.read_snaplist()
         if len(redshifts) == 0:
-            msg = "Could not parse any redshift values in file {0}"\
+            msg = "Could not parse any redshift values"\
                 .format(sim_file)
             raise tao.ConversionError(msg)
-        print("Found {0} redshifts in file {1}".format(len(redshifts),
-                                                       sim_file))
+        print("Found {0} redshifts".format(len(redshifts)))
+
         return redshifts
 
     def get_mapping_table(self):
         """Returns a mapping from TAO fields to GALICS fields."""
 
-        mapping = {'posx': 'x_pos',
-                   'posy': 'y_pos',
-                   'posz': 'z_pos',
-                   'velx': 'x_vel',
-                   'vely': 'y_vel',
-                   'velz': 'z_vel',
-                   'coldgas': 'disc_mcoldgas',
-                   'metalscoldgas': 'disc_mcold_metals',
-                   'diskscaleradius': 'disc_scalelength',
+        mapping = {'posx': 'X_POS',
+                   'posy': 'Y_POS',
+                   'posz': 'Z_POS',
+                   'velx': 'X_VEL',
+                   'vely': 'Y_VEL',
+                   'velz': 'Z_VEL',
+                   'coldgas': 'DISC_MCOLDGAS',
+                   'metalscoldgas': 'DISC_MCOLD_METALS',
+                   'diskscaleradius': 'DISC_SCALELENGTH',
                    'objecttype': 'GalaxyType',
-                   'dt': 'Delta_t',
+                   'dt': 'DELTA_T',
+                   'snapnum':'SNAPNUM',
+                   'descendant':'Descendant',
+                   'sfrdisk': 'SFR_DISK',
+                   'sfrbulge': 'SFR_BULGE',
+                   'sfrdiskz': 'DISC_MCOLD_METALS',
+                   'sfrbulgez': 'BULGE_MCOLD_METALS',
                    }
 
         return mapping
+
 
     # Only prop to show in tao
     def get_extra_fields(self):
         """Returns a list of GALICS fields and types to include."""
         wanted_field_keys = [
-            "galaxyID",
-            "g_treeID",
-            "g_haloID",
-            "g_DescendantID",
-            "g_FirstProgenitorID",
-            "g_NextProgenitorID",
-            "SnapNum",
-            "halo_mvir",
-            "halo_mfof",
-            "halo_rvir",
-            "disc_mgal",
-            "bulge_mgal",
-            "disc_mcoldgas",
-            "bulge_mcoldgas",
-            "disc_mstar",
-            "bulge_mstar",
-            "disc_mcold_metals",
-            "bulge_mcold_metals",
-            "disc_scalelength",
-            "bulge_scalelength",
-            "sfr_disk",
-            "sfr_bulge",
-            "nb_merg",
-            "Delta_t",
-            "x_pos",
-            "y_pos",
-            "z_pos",
-            "x_vel",
-            "y_vel",
-            "z_vel",
+            "GALAXYID",
+            "G_TREEID",
+            "G_HALOID",
+            "G_DESCENDANTID",
+            "G_FIRSTPROGENITORID",
+            "G_NEXTPROGENITORID",
+            "HALO_MVIR",
+            "HALO_MFOF",
+            "HALO_RVIR",
+            "DISC_MGAL",
+            "BULGE_MGAL",
+            "BULGE_MCOLDGAS",
+            "DISC_MSTAR",
+            "BULGE_MSTAR",
+            "BULGE_MCOLD_METALS",
+            "BULGE_SCALELENGTH",
+            "SFR_DISK",
+            "SFR_BULGE",
+            "NB_MERG",
+            "DELTA_T",
+            "mergeIntoID",
+            "mergetype",
+            "mergeIntoSnapNum",
             "GalaxyType",
             ]
 
@@ -452,14 +498,15 @@ class GALICSConverter(tao.Converter):
         return fields
     
 
-    def read_snaplist(self, fname):
-
+    def read_snaplist(self,
+                      fn="../galicsInputFiles/galics_with_lttimes.dat"):
+        
         """ Read in the list of available snapshots from the GalicsSnaphots_list.dat file.
 
         Parameters
         ----------
-        fname : str
-            GalicsSnaphots_list.dat
+        fname : string
+                default="../galicsInputFiles/GalicsSnaphots_list.dat"
 
         Returns
         -------
@@ -470,18 +517,27 @@ class GALICSConverter(tao.Converter):
             redshifts
 
         """
-
-        with open('GalicsSnaphots_list.dat', 'r') as f:
-            lines = f.readlines()
+        from os.path import join as pjoin
+        fname = pjoin(self.args.trees_dir,
+                      fn)
         
         snaplist = []
         zlist    = []
-        for line in lines:
-            p = line.split()
-            snaplist.append(int(p[0]))
-            zlist.append(np.float64(p[1]))
-               
-        return np.array(snaplist, dtype=int), np.array(zlist, dtype=np.float64)
+        lt_times = []
+        with open(fname, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('#'): continue
+                
+                p = line.split()
+                snaplist.append(p[0])
+                zlist.append(p[1])
+                lt_times.append(p[2])
+
+                
+        return np.array(snaplist, dtype=np.int), \
+            np.array(zlist, dtype=np.float64),\
+            np.array(lt_times, dtype=np.float64)
 
 
     def GalaxyType(self, tree):
@@ -493,11 +549,12 @@ class GALICSConverter(tao.Converter):
 
 
 
-    def generate_galics_filename(inputdir, hdf5base, snapnum):
+    def generate_galics_filename(self, inputdir, hdf5base, snapnum):
+        
         return '{0}/{1}{2}.h5'.format(inputdir, hdf5base, snapnum)
 
 
-    def check_and_open_all_tree_files(inputdir, hdf5base, snapshots):
+    def check_and_open_all_tree_files(self, inputdir, hdf5base, snapshots):
         '''
         Create a dictionary of h5py file handles opened for reading.
 
@@ -519,7 +576,7 @@ class GALICSConverter(tao.Converter):
                 print(message)
                 raise
 
-            fname = generate_galics_filename(inputdir, hdf5base, snapnum)
+            fname = self.generate_galics_filename(inputdir, hdf5base, snapnum)
             try:
                 # File exists open the file, and append to dict
                 # with the snapnum as key
@@ -533,7 +590,7 @@ class GALICSConverter(tao.Converter):
         return hf_files
 
 
-    def validate_treeid_assumptions(hf_files, snapshots, tree_id_field):
+    def validate_treeid_assumptions(self, hf_files, snapshots, tree_id_field):
         '''
         Validate all assumptions about the TREEID. The assumptions are:
 
@@ -567,18 +624,8 @@ class GALICSConverter(tao.Converter):
         # No error checking for now
         return True
 
-    def read_tree_ids(uniq_tree_ids, tree_id_field,
-                      snapshots, hf_files):
 
-        for snapnum in tqdm(snapshots):
-            hf = hf_files[snapnum]
-
-            # Read-in *ALL* the treeids at this snapshot
-            treeids = hf['Galics_output'][tree_id_field][:]
-
-
-
-    def get_start_and_stop_indices_per_tree(uniq_tree_ids, tree_id_field,
+    def get_start_and_stop_indices_per_tree(self, uniq_tree_ids, tree_id_field,
                                             snapshots, hf_files):
 
         '''
@@ -599,7 +646,10 @@ class GALICSConverter(tao.Converter):
         start_indices[:] = -1
         stop_indices[:] = -1
 
-        for snapnum in tqdm(snapshots):
+        # ### Create a tuple of treeid, start_index, end_index
+        # tree_id_start_stop = np.empty((ntrees, lastsnap + 1), dtype=(np.int 3))
+        
+        for snapnum in tqdm(snapshots, total=lastsnap + 1):
             hf = hf_files[snapnum]
 
             # Read-in *ALL* the treeids at this snapshot
@@ -607,15 +657,34 @@ class GALICSConverter(tao.Converter):
 
             # Now match the treeids at this snapshot to the
             # unique treeids
-            for treenum, tid in tqdm(enumerate(uniq_tree_ids), total=ntrees):
-                ind = (np.where(treeids == tid))[0]
+            # tqdm_desc = ''
+            tqdm_desc = "Working on snaphot {0}".format(snapnum)
+            # start_offset = 0
+            # seen_treeids = []
+            #     # Check if the tree exists at this snapshot
+            #     if treeids[start_offset] != tid:
+            #         continue
 
+            #     # Check that we have not seen this treeid before (because
+            #     # all treeids should be sequentially stored)
+                
+            #     seen_treeids.append(tid)
+
+            #     end_offset = start_offset + 1
+            #     while treeids[end_offset] == tid:
+            #         end_offset += 1
+
+            #     ngals = end_offset - start_offset
+
+            for treenum, tid in tqdm(enumerate(uniq_tree_ids), total=ntrees,
+                                     desc=tqdm_desc):
+                ind = (np.where(treeids == tid))[0]
                 # if there is no match, that means that the tree
                 # does not exist at this snapshot
                 ngals = len(ind)
                 if len(ind) == 0:
                     continue
-
+                
                 message = "\nThe array indices for each tree should be sequential "\
                     "but TREEID = {0} at snapshot = {1}\nseems to be stored "\
                     "over non-sequential indices. Check if the input GALICS "\
@@ -690,19 +759,30 @@ class GALICSConverter(tao.Converter):
     # @profile
     def iterate_trees(self):
         """Iterate over GALICS trees."""
+
         # I need to "compute" the galaxy type here (fake values: all=0)
-        computed_fields = {'GalaxyType': self.GalaxyType}
+        fields_computed_with_function = {'GalaxyType': self.GalaxyType}
         
-        computed_field_list = [('snapnum',  self.src_fields_dict['snapnum']['type']),
-                               ('mergeIntoID', self.src_fields_dict['mergeIntoID']['type']),
+        computed_field_list = [('mergeIntoID', self.src_fields_dict['mergeIntoID']['type']),
                                ('mergeIntoSnapNum', self.src_fields_dict['mergeIntoSnapNum']['type']),
                                ('mergetype', self.src_fields_dict['mergetype']['type']),
-                               ('dT', self.src_fields_dict['dT']['type']),
+                               # ('dT', self.src_fields_dict['dT']['type']),
                                ('Descendant', self.src_fields_dict['Descendant']['type']),
                                ]
-        
+
+        lastsnap = self.args.lastsnap
+        firstsnap = self.args.firstsnap
+        sim_file = self.get_simfilename(lastsnap)
+        snaps, redshifts, lt_times = self.read_snaplist()
+        rev_sorted_ind = np.argsort(snaps)[::-1]
+        snaps = snaps[rev_sorted_ind]
+        redshift = redshifts[rev_sorted_ind]
+        lt_times = lt_times[rev_sorted_ind]
+        dt_values = np.ediff1d(lt_times, to_begin=lt_times[0])
+
+        ## Figure out the input data-type
         allkeys = [k.lower() for k in self.src_fields_dict.keys()]
-        for f in computed_fields:
+        for f in fields_computed_with_function:
             if f.lower() not in allkeys:
                 assert "Computed field = {0} must still be defined "\
                     "in the module level field_dict".format(f)
@@ -710,28 +790,11 @@ class GALICSConverter(tao.Converter):
             field_dtype_dict = self.src_fields_dict[f]
             computed_field_list.append((f, field_dtype_dict['type']))
 
-
-        sim_file = self.get_simfilename()
-        params = self.read_input_params(sim_file)
-        snaps, redshifts, lt_times = self.read_snaplist(sim_file)
-        #param file : cosmo, box size etc => see read_simulation
-        #ascii snapshots+redshift list
-        rev_sorted_ind = np.argsort(snaps)[::-1]
-        snaps = snaps[rev_sorted_ind]
-        redshift = redshifts[rev_sorted_ind]
-        lt_times = lt_times[rev_sorted_ind]
-        dt_values = np.ediff1d(lt_times, to_begin=lt_times[0])
-
-
-        
-        ntrees = self.get_ntrees()
-        totntrees = sum(ntrees.values())
-
+        ## Since this is an hdf5 file, we can directly query the
+        ## data-type    
         array_fields = []
         with h5py.File(sim_file, "r") as fin:
-            ncores = fin.attrs['NCores'][0]
-            snap_group = fin['Snap%03d' % snaps[0]]
-            file_dtype = snap_group['Core0/Galaxies'].dtype
+            file_dtype = fin['Galics_output'].dtype
             ordered_type = []
             for d in file_dtype.descr:
                 try:
@@ -743,9 +806,39 @@ class GALICSConverter(tao.Converter):
                     for k in range(shape[0]):
                         ordered_type.append(('{0}_{1}'.format(name, k), typ))
 
+        # for cf in computed_field_list:
+        #     if cf not in ordered_type.keys():
+        #         ordered_type.extend(cf)
+                        
         ordered_type.extend(computed_field_list)
+                        
+        
+        print("ordered_type is {0}".format(ordered_type))
         src_type = np.dtype(ordered_type)
+        print("Input src_type is {0}".format(src_type))
 
+        ## Check that computed fields are being pulled through, either via
+        ## mapping table or get_extra_fields
+        ## MS 13/2/2018: This check is failing for `dT` -> this is potentially a
+        ## convention issue because Tibo has Delta_t. Must check and confirm
+        ## with Tibo and Darren as to what might be appropriate. 
+        mapping_table = (self.get_mapping_table()).keys()
+        extra_fields = (self.get_extra_fields()).keys()
+        all_fields_carried_through = mapping_table
+        all_fields_carried_through.extend(extra_fields)
+        for (cf, _) in computed_field_list:
+            if cf not in all_fields_carried_through:
+                msg = "Computed field = `{0}` is not being carried through to "\
+                    "TAO. Please add `{0}` into either the `get_mapping_table` "\
+                    "function or `get_extra_fields`.\nFor reference:\n"\
+                    "mapping table is: `{1}`\n"\
+                    "Extra fields is: `{2}`\n"\
+                    "all_fields_carried_through = `{3}`"\
+                    .format(cf, mapping_table,
+                            extra_fields,
+                            all_fields_carried_through)
+                warnings.warn(msg, Warning)
+        
 
         # First create the list snapshots, the '- 1' in the second parameter
         # is required otherwise the first snapshot will not be included.
@@ -755,11 +848,13 @@ class GALICSConverter(tao.Converter):
 
         # Now check if all the relevant files exist and open them with h5py
         # Result is a dictionary of h5py file handles
-        hf_files = check_and_open_all_tree_files(inputdir, hdf5base, snapshots)
+        hf_files = self.check_and_open_all_tree_files(self.args.trees_dir,
+                                                      self.args.galics_filename,
+                                                      snapshots)
 
         # Are we processing galaxies or halos -> set the Unique ID field
         # appropriately
-        if processing_galaxies:
+        if self.args.processing_galaxies:
             unique_id_field = 'GALAXYID'
             tree_id_field = 'G_TREEID'
             desc_id_field = 'G_DESCENDANTID'
@@ -770,7 +865,7 @@ class GALICSConverter(tao.Converter):
 
         # Files are open -> validate the tree assumptions are not being violated
         # This is a PASS/FAIL test.
-        validate_treeid_assumptions(hf_files, snapshots, tree_id_field)
+        self.validate_treeid_assumptions(hf_files, snapshots, tree_id_field)
 
         # Get the list of TREEIDS at the last snapshot
         hf = hf_files[lastsnap]
@@ -780,20 +875,22 @@ class GALICSConverter(tao.Converter):
         # Find the unique set of TREEIDS. These unique tree ids will
         # provide the basis for processing the data one tree at a time.
         uniq_tree_ids = np.unique(treeids)
+
+        # The other horizontal tree, MERAXES, has ntrees as an array
+        # with each element denoting the number of trees per file (within
+        # MERAXES, each MPI core writes out one file. GALICS is different --
+        # there is only one file per snapshot)
+        
         ntrees = uniq_tree_ids.size
+        totntrees = ntrees
+        
 
         # We have an array of unique tree ids -> let's first compute the starting
         # and stopping indices for each tree at each snapshot
-        # start_indices, \
-        #     stop_indices, \
-        #     ngalaxies_per_tree_per_snapshot = \
-        #     get_start_and_stop_indices_per_tree(uniq_tree_ids, tree_id_field,
-        #                                         snapshots, hf_files)
-
-        read_tree_ids(uniq_tree_ids, tree_id_field, snapshots, hf_files)
-
-        return
-
+        start_indices, stop_indices, ngalaxies_per_tree_per_snapshot = \
+            self.get_start_and_stop_indices_per_tree(uniq_tree_ids, tree_id_field,
+                                                     snapshots, hf_files)
+            
         # Get the number of galaxies per tree -> this is simply a sum (per tree)
         # over the number of galaxies per snapshot
         ngalaxies_per_tree = ngalaxies_per_tree_per_snapshot.sum(axis=1)
@@ -817,12 +914,7 @@ class GALICSConverter(tao.Converter):
             "values = {2}".format(unique_id_field, len(ids),
                                   len(unique_ids))
 
-        assert len(unique_ids) == len(unique_ids), message
-
-        # Create the source datatype based on all the fields in the input
-        # + any other computed fields etc that might be getting pulled through
-        # INCORRECTLY set to input type for now:
-        src_type = input_type
+        assert len(unique_ids) == len(ids), message
 
         # Tree validation passed -> process one tree at a time. 
         for treenum, tid in tqdm(enumerate(uniq_tree_ids), total=ntrees):
@@ -830,7 +922,8 @@ class GALICSConverter(tao.Converter):
 
             # First create the numpy array to hold the vertical tree
             # The input data type must be that specified in the hdf5 file
-            tree = np.empty(ngalaxies_per_tree[treenum], dtype=src_type)
+            tree_size = ngalaxies_per_tree[treenum]
+            tree = np.empty(tree_size, dtype=src_type)
 
             # For each tree, loop over all snapshots
             # First create the array with number of
@@ -897,8 +990,14 @@ class GALICSConverter(tao.Converter):
                                     .format(gal_data[s][unique_id_field],
                                             snapnum, d, ii)
                                 raise AssertionError(message)
-
-                            descs[s] = ii
+                            
+                            # ii only refers to the snapshot local index, but we need
+                            # an index that spans the entire range of the tree.
+                            # The indices for ids at the previous snapshot will
+                            # start at `prev_offs` (the value of `offs` at the
+                            # previous snapshot). Therefore, the effective index for
+                            # the descendant is given below:
+                            descs[s] = ii + prev_offs
 
                 # All the data have been read-in and calculated
                 # assign to the existing arrays
@@ -906,21 +1005,113 @@ class GALICSConverter(tao.Converter):
                     .format(gal_data, dest_sel, source_sel)
                 assert gal_data.shape == tree[dest_sel].shape, message
                 tree[dest_sel] = gal_data
-                # tree[dest_sel]['snapnum'] = snapnum
-                # tree[dest_sel]['Descendant'] = descs
+                tree[dest_sel]['SNAPNUM'] = snapnum
+                tree[dest_sel]['Descendant'] = descs
 
                 # Store the Unique IDs to match for descendants
                 # at the previous snapshot (which will be the
                 # next iteration)
                 future_snap_uniqueid = gal_data[unique_id_field]
+                prev_offs = offs
 
                 # Update the number of galaxies read in so far
                 # for this tree
                 offs += ngalaxies_this_snap
 
-                # print("tree = {0}".format(tree))
-                # print("Working on treenum = {0}....done".format(treenum))
-                # yield tree
+            # Done reading in the entire tree
+            if offs != tree_size:
+                msg = "For tree = {0}, expected to find total number of "\
+                    "halos = {1} but during loading found = {2} instead"\
+                    .format(treenum, tree_size, offs)
+                raise AssertionError(msg)
+            
+            ## Convert positions to co-moving Mpc/h
+            for fld in ['X_POS', 'Y_POS', 'Z_POS']:
+                tree[fld][:] = tree[fld][:] * (self.hubble * 0.01)
+            
+            # One tree has been completely loaded (vertical tree now)
+            for fieldname, conv_func in fields_computed_with_function.items():
+                tree[fieldname] = conv_func(tree)
+
+
+            ## The following are copied from meraxes -> adapt to
+            ## GALICS convention
+            # Now assign the remaining fields 
+            tree['mergeIntoID'] = -1
+            tree['mergeIntoSnapNum'] = -1
+            tree['mergetype'] = 0
+            for gal in tree:
+                gid, d = gal['GALAXYID'], gal['Descendant']
+                # no valid descendant, nothing to verify
+                if d == -1:
+                    continue
+
+                if gid == tree['GALAXYID'][d]:
+                    # The galaxy continues as itself
+                    gal['mergeIntoID'] = -1
+                    gal['mergeIntoSnapNum'] = -1
+                    gal['mergetype'] = 0
+                    continue
+
+                else:
+
+                    ind = (np.where((tree['SNAPNUM'] > gal['SNAPNUM']) &
+                                   (tree['GALAXYID'] == gid)))[0]
+                    if len(ind) > 0:
+                        msg = 'Error: Galaxy with ID = {0} '\
+                             'at snapshot = {1} has descendant ID = '\
+                             '{2} (which is different) but this galaxy '\
+                             'exists at future snapshots. Num Tree matches '\
+                             'in the future snaps = {3}. snaps = {4} with '\
+                             'iD = {5}'.format(gid, gal['SNAPNUM'],
+                                               tree['GALAXYID'][d], len(ind),
+                                               tree['SNAPNUM'][ind],
+                                               tree['GALAXYID'][ind])
+                        Tracer()()
+                        raise tao.ConversionError(msg)
+
+                    gal['mergeIntoID'] = tree['GALAXYID'][d]
+                    gal['mergeIntoSnapNum'] = tree['SNAPNUM'][d]
+                    gal['mergetype'] = 2
+
+
+            # # Populate the field with galaxy ages (required by TAO SED module) 
+            # tree['dT'] = dt_values[tree['SNAPNUM']]
+
+            # First validate some fields.
+            for f in ['GalaxyType', 'GALAXYID', 'SNAPNUM']:
+                if min(tree[f]) < 0:
+                    msg = "ERROR; min(tree[{0}]) = {1} should be non-zero "\
+                        .format(f, min(tree[f]))
+
+                    ind = (np.where(tree[f] < 0))[0]
+                    msg += "tree[f] = {0}".format(tree[ind][f])
+                    msg += "tree[snapnum] = {0}".format(tree[ind]['SNAPNUM'])
+                    raise ValueError(msg)
+
+            # # Validate central galaxy index (unique id, generated by sage)
+            # centralind = (np.where((tree['GalaxyType'] == 0) & (tree['CentralGal'] >= 0)))[0]
+            # centralgalind = tree[centralind]['CentralGal']
+            # if not bool(np.all(tree['GALAXYID'][centralind] ==
+            #                    tree['GALAXYID'][centralgalind])):
+            #     print("tree[ID][centralind] = {0}".format(tree['GALAXYID'][centralind]))
+            #     print("tree[ID][centralgalind] = {0}".format(tree['GALAXYID'][centralgalind]))
+            #     print("centralind = {0}".format(centralind))
+            #     print("tree['SNAPNUM'][centralind] = {0}".format(tree['SNAPNUM'][centralind]))
+            #     print("tree['GalaxyType'][centralind] = {0}".format(tree['GalaxyType'][centralind]))
+            #     badind = tree['GALAXYID'][centralind] != tree['GALAXYID'][centralgalind]
+            #     print("badind = {0} len(bad) = {1}".format(badind, len(badind)))
+            #     print("tree[ID][c[b]] = {0}".format(tree['GALAXYID'][centralind[badind]]))
+            #     print("tree[ID][cg[b]] = {0}".format(tree['GALAXYID'][centralgalind[badind]]))
+
+            # assert bool(np.all(tree['GALAXYID'][centralind] ==
+            #                    tree['GALAXYID'][centralgalind])), \
+            #                    "Central Galaxy ID must equal GalaxyID for centrals"
+
+                
+            # print("tree = {0}".format(tree))
+            # print("Working on treenum = {0}....done".format(treenum))
+            yield tree
 
 
         # Close all the open 'snapshot' files
