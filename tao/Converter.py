@@ -4,7 +4,7 @@ from .library import library
 from .Exporter import Exporter
 from .Mapping import Mapping
 from .xml import get_settings_xml
-# from IPython.core.debugger import Tracer
+from IPython.core.debugger import Tracer
 from collections import OrderedDict
 import os
 
@@ -112,11 +112,11 @@ class Converter(object):
             except KeyError:
                 try:
                     new_d = self.src_fields_dict[val.lower()]
-                except:
-                    Tracer()()
-
-            # print "Calling combine keys for mapping table field = {0} val = {1}"\
-            #     .format(key, val)
+                except KeyError:
+                    try:
+                        new_d = self.src_fields_dict[val.upper()]
+                    except:
+                        Tracer()()
 
             # print "old dict = {0}\nnew_dict = {1}".format(old_d, new_d)
             updated_d = self.combine_and_append_keys(old_d, new_d)
