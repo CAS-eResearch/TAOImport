@@ -1036,13 +1036,13 @@ class MERAXESConverter(tao.Converter):
     def iterate_trees(self):
         """Iterate over MERAXES trees."""
 
-        computed_fields = {'Vpeak': self.Vpeak,
-                           'sfrdisk': self.sfrdisk,
-                           'sfrbulge': self.sfrbulge,
-                           'sfrdiskz': self.sfrdiskz,
-                           'sfrbulgez': self.sfrbulgez,
-                           'GalaxyIndex': lambda x : x['ID'],
-                           }
+        fields_computed_with_function = {'Vpeak': self.Vpeak,
+                                         'sfrdisk': self.sfrdisk,
+                                         'sfrbulge': self.sfrbulge,
+                                         'sfrdiskz': self.sfrdiskz,
+                                         'sfrbulgez': self.sfrbulgez,
+                                         'GalaxyIndex': lambda x : x['ID'],
+                                         }
         
         computed_field_list = [('snapnum',  self.src_fields_dict['snapnum']['type']),
                                ('mergeIntoID', self.src_fields_dict['mergeIntoID']['type']),
@@ -1053,7 +1053,7 @@ class MERAXESConverter(tao.Converter):
                                ]
         
         allkeys = [k.lower() for k in self.src_fields_dict.keys()]
-        for f in computed_fields:
+        for f in fields_computed_with_function:
             if f.lower() not in allkeys:
                 assert "Computed field = {0} must still be defined "\
                     "in the module level field_dict".format(f)
@@ -1256,7 +1256,7 @@ class MERAXESConverter(tao.Converter):
                     tree['MWMSA'][nan_ind] = 0.0
                             
                     # One tree has been completely loaded (vertical tree now)
-                    for fieldname, conv_func in computed_fields.items():
+                    for fieldname, conv_func in fields_computed_with_function.items():
                         tree[fieldname] = conv_func(tree)
 
 
