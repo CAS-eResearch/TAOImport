@@ -350,7 +350,7 @@ class GALICSConverter(tao.Converter):
                                 'simulation name for a hydro sim')
         parser.add_argument('--firstsnap', default=2,
                             help='The first snapshot to process')
-        parser.add_argument('--lastsnap', default=7,
+        parser.add_argument('--lastsnap', default=94,
                             help='The last snapshot to process')
         parser.add_argument('--processing-galaxies', default=True,
                             help='A boolean flag to indicate that '\
@@ -624,20 +624,27 @@ class GALICSConverter(tao.Converter):
         # No error checking for now
         return True
 
-
-    def get_start_and_stop_indices_per_tree(self, uniq_tree_ids, tree_id_field,
+    @profile
+    def get_start_and_stop_indices_per_tree(self, ntrees, tree_id_field,
                                             snapshots, hf_files):
 
         '''
 
         Returns 2D arrays of shape (ntrees, lastsnap + 1) containing the
         starting and stopping indices per tree per snapshot. The `start`
-        (and `stop`) indices are returned in the same order as the supplied
-        `unique tree ids`. 
+        (and `stop`) indices are returned in order in which unique tree
+        ids are present in the file.
 
         '''
-        ntrees = len(uniq_tree_ids)
         lastsnap = max(snapshots)
+        msg = "Error: Bug in code. The snapshots have to be processed "\
+            "in reverse order. Snapshots at later times need to be "\
+            "processed before earlier snapshots (i.e., the snapshots "\
+            "array has to be sorted in decreasing order). Currently, "\
+            "the snapshots array contains: {0}".format(snapshots)
+        if lastsnap != snapshots[0]:
+            raise tao.ValidationError(msg)
+
         start_indices = np.empty((ntrees, lastsnap + 1), dtype=np.int)
         stop_indices = np.empty((ntrees, lastsnap + 1), dtype=np.int)
         ngalaxies_per_tree_per_snapshot = np.zeros((ntrees, lastsnap + 1),
@@ -646,86 +653,118 @@ class GALICSConverter(tao.Converter):
         start_indices[:] = -1
         stop_indices[:] = -1
 
-        # ### Create a tuple of treeid, start_index, end_index
-        # tree_id_start_stop = np.empty((ntrees, lastsnap + 1), dtype=(np.int 3))
+        # Create a dictionary that converts from treeid to arrayindex
+        # This is simply the ordering of treeids at the lastsnapshot
+        # Requires an OrderedDict to preserve the file order for
+        # treeids
+        treeid_to_array_index = OrderedDict() 
         
         for snapnum in tqdm(snapshots, total=lastsnap + 1):
             hf = hf_files[snapnum]
 
-            # Read-in *ALL* the treeids at this snapshot
-            treeids = hf['Galics_output'][tree_id_field][:]
+            seen_tids = list()
+            start_off = 0
+            treeids = hf['Galics_output'][tree_id_field]
+            totngal_this_snap = treeids.shape[0]
+            treeindex = 0
 
-            # Now match the treeids at this snapshot to the
-            # unique treeids
-            # tqdm_desc = ''
-            tqdm_desc = "Working on snaphot {0}".format(snapnum)
-            # start_offset = 0
-            # seen_treeids = []
-            #     # Check if the tree exists at this snapshot
-            #     if treeids[start_offset] != tid:
-            #         continue
+            desc = "Working on snapshot {0}".format(snapnum)
+            pbar = tqdm(total=ntrees, desc=desc)
+            while start_off < totngal_this_snap:
+                # print("Working on tree = {0} ntrees = {1} ngal = {2} "\
+                #        "start offset = {3}"
+                #       .format(treeindex, ntrees,
+                #               totngal_this_snap, start_off))
+                pbar.update(1)
 
-            #     # Check that we have not seen this treeid before (because
-            #     # all treeids should be sequentially stored)
+                # start processing new tree
+                curr_treeid = treeids[start_off]
+
+                # Make sure that we have not seen this treeid
+                # at this snapshot already! (Validate requirement
+                # that treeids are stored contiguously at a given
+                # snapshot
+                # msg = "\nThe array indices for each tree should be "\
+                #     "stored contiguously at each snapshot. But "\
+                #     "TREEID = {0} at snapshot = {1}\nseems to be stored "\
+                #     "over non-sequential indices. Check if the input GALICS "\
+                #     "data are okay.\n`seen_tids = {2}`"\
+                #     .format(curr_treeid, snapnum, seen_tids)
+                # if curr_treeid in seen_tids:
+                #     raise tao.ValidationError(msg)
                 
-            #     seen_treeids.append(tid)
+                end_off = start_off + 1
+                while (end_off < totngal_this_snap) and \
+                        (treeids[end_off] == curr_treeid):
+                    end_off += 1
 
-            #     end_offset = start_offset + 1
-            #     while treeids[end_offset] == tid:
-            #         end_offset += 1
-
-            #     ngals = end_offset - start_offset
-
-            for treenum, tid in tqdm(enumerate(uniq_tree_ids), total=ntrees,
-                                     desc=tqdm_desc):
-                ind = (np.where(treeids == tid))[0]
-                # if there is no match, that means that the tree
-                # does not exist at this snapshot
-                ngals = len(ind)
-                if len(ind) == 0:
-                    continue
+                # print("Working on tree = {0} ngal = {1} start offset = {2} "
+                #       "end = {3}. Done".format(treeindex, totngal_this_snap,
+                #                                start_off,
+                #                                end_off))
+                    
+                    
+                # Create the treeid to array index while
+                # processing the last snapshot
+                if snapnum != lastsnap:
+                    treeindex = treeid_to_array_index[curr_treeid]
+                else:
+                    # We already have the correct value of
+                    # treeindex
+                    pass
                 
-                message = "\nThe array indices for each tree should be sequential "\
-                    "but TREEID = {0} at snapshot = {1}\nseems to be stored "\
-                    "over non-sequential indices. Check if the input GALICS "\
-                    "data are okay".format(tid, snapnum)
+                msg = "Error: Bug in code. Tree index = {0} for "\
+                    "treeid = {1} should be smaller than the "\
+                    "total number of trees = {2}. Please file "\
+                    "an issue on the TAOImport github repo.\n"\
+                    .format(treeindex, curr_treeid, ntrees)
+                if treeindex >= ntrees:
+                    raise tao.ValidationError(msg)
+                
+                # Assign the values
+                start_indices[treeindex, snapnum] = start_off
+                stop_indices[treeindex, snapnum] = end_off
+                ngalaxies_per_tree_per_snapshot[treeindex, snapnum] = end_off - start_off 
 
-                min_ind = ind.min()
-                max_ind = ind.max()
-                if (max_ind - min_ind) != (ngals-1):
-                    message += "\nThe difference between the max index and min "\
-                        "index for galaxies belonging to the same tree must be\n"\
-                        "the same length as the number of galaxies in that tree "\
-                        "at that snapshot. However, I find max. index = {0} and\n"\
-                        "min. index = {1} while the number of galaxies = {2}."\
-                        .format(max_ind, min_ind, ngals)
-                    message += "\nind = {0}\n".format(ind)
-                    raise AssertionError(message)
+                # Now update the start offset
+                start_off = end_off
+                seen_tids.append(curr_treeid)
+                
+                # If we are processing the last snapshot
+                if snapnum == lastsnap:
+                    treeid_to_array_index[curr_treeid] = treeindex
+                    treeindex += 1                    
 
+            pbar.close()
+            
+            # All trees at this snapshot have been processed
+            if snapnum == lastsnap:
+                # Check that the number of trees processed is the
+                # same as the number of unique trees (passed as the `ntrees`
+                # parameter). For the last snapshot, the list `seen_tids` has
+                # the same set of treeids as the keys in the OrderedDict
+                # `treeid_to_array_index` i.e., seen_tids == treeid_to_array_index.keys()
+                msg = "Error: The number of unique treeids = {0} found in "\
+                    "the last snapshot does not equal the "\
+                    "`ntrees` parameter = {1} passed into the function"\
+                    .format(len(seen_tids), ntrees)
+                if len(seen_tids) != ntrees:
+                    raise tao.ValidationError(msg)
+                    
+        # Create the treeid_file_order variable containing the treeids
+        # in the order in which they appear in the file
+        # Check that treeid_to_array_index is an ordereddict
+        msg = "Error: The variable containing the treeids must be an "\
+            "OrderedDict, found {0} instead. Change the initialization "\
+            "for `treeid_to_array_index` variable to fix this issue"\
+            .format(type(treeid_to_array_index))
+        if not isinstance(treeid_to_array_index, collections.OrderedDict):
+            raise tao.ValidationError(msg)
+        
+        tree_id_file_order = treeid_to_array_index.keys()
 
-                # Sort the array - might not be necessary
-                # but a sorted array is required for any sequential test
-                # sorting catches any repeated indices which might pass
-                # the previous (max_ind - min_ind) == (ngals - 1) test
-                ind.sort()
-
-                # Check that the array is sequential
-                # -> take a difference of consecutive elements in the
-                # sorted array. This difference should be exactly equal
-                # to 1.
-                diff1d = np.ediff1d(ind)
-
-                # There was a numpy bug where np.all did not return
-                # boolean but respected the datatype of the input array
-                # but I only want a PASS/FAIL
-                assert bool(np.all(diff1d == 1)) == True, message
-
-                # All checks have passed -> now store the start/stop/ngal indices
-                start_indices[treenum, snapnum] = min_ind
-                stop_indices[treenum, snapnum] = max_ind + 1 # Slice indices are not inclusive
-                ngalaxies_per_tree_per_snapshot[treenum, snapnum] = ngals
-
-        return start_indices, \
+        return tree_id_file_order, \
+            start_indices, \
             stop_indices, \
             ngalaxies_per_tree_per_snapshot
     
@@ -880,15 +919,13 @@ class GALICSConverter(tao.Converter):
         # with each element denoting the number of trees per file (within
         # MERAXES, each MPI core writes out one file. GALICS is different --
         # there is only one file per snapshot)
-        
         ntrees = uniq_tree_ids.size
         totntrees = ntrees
         
-
         # We have an array of unique tree ids -> let's first compute the starting
         # and stopping indices for each tree at each snapshot
-        start_indices, stop_indices, ngalaxies_per_tree_per_snapshot = \
-            self.get_start_and_stop_indices_per_tree(uniq_tree_ids, tree_id_field,
+        tree_id_file_order, start_indices, stop_indices, ngalaxies_per_tree_per_snapshot = \
+            self.get_start_and_stop_indices_per_tree(ntrees, tree_id_field,\
                                                      snapshots, hf_files)
             
         # Get the number of galaxies per tree -> this is simply a sum (per tree)
@@ -917,7 +954,7 @@ class GALICSConverter(tao.Converter):
         assert len(unique_ids) == len(ids), message
 
         # Tree validation passed -> process one tree at a time. 
-        for treenum, tid in tqdm(enumerate(uniq_tree_ids), total=ntrees):
+        for treenum, tid in tqdm(enumerate(tree_id_file_order), total=ntrees):
             # print("Working on treenum = {0}".format(treenum))
 
             # First create the numpy array to hold the vertical tree
