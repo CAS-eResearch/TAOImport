@@ -3,7 +3,7 @@
 A control script to be used with `taoconvert` to convert SAGE output
 binary data into HDF5 input for TAO.
 """
-
+from __future__ import print_function
 import re, os
 import numpy as np
 import tao
@@ -862,8 +862,8 @@ class SAGEConverter(tao.Converter):
             n_gals = [np.fromfile(f, np.uint32, 1)[0] for f in files]
             chunk_sizes = [np.fromfile(f, np.uint32, n_trees) for f in files]
             tree_sizes = sum(chunk_sizes)
-            print("Working on ntrees = {0} in group = {1}".format(n_trees,
-                                                                  group))
+            print("Working on ntrees = {0} in group = {1}"
+                  .format(n_trees, group))
 
             for ii in tqdm(xrange(n_trees)):
                 tree_size = tree_sizes[ii]
@@ -871,8 +871,19 @@ class SAGEConverter(tao.Converter):
                 offs = 0
                 for jj in xrange(len(chunk_sizes)):
                     chunk_size = chunk_sizes[jj][ii]
+                    if chunk_size <= 0: continue
+
                     data = np.fromfile(files[jj], from_file_dtype, chunk_size)
-                    tree[offs:offs + chunk_size] = data
+
+                    ## MS 13/07/2018.
+                    ## from numpy 1.13, the assignment of structured arrays
+                    ## changed. Previously, same named fields were copied
+                    ## across by default. Now, essentially the memory 
+                    ## is directly copied without regard for the actual
+                    ## column names. (I would argue this is a regression)
+                    for _v in data.dtype.names:
+                        tree[_v][offs:offs + chunk_size] = data[_v][:]
+                        
                     offs += chunk_size
 
                 for fieldname, conversion_function in computed_fields.items():
