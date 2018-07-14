@@ -862,8 +862,8 @@ class SAGEConverter(tao.Converter):
             n_gals = [np.fromfile(f, np.uint32, 1)[0] for f in files]
             chunk_sizes = [np.fromfile(f, np.uint32, n_trees) for f in files]
             tree_sizes = sum(chunk_sizes)
-            print("Working on ntrees = {0} in group = {1}"
-                  .format(n_trees, group))
+            # print("Working on ntrees = {0} in group = {1}"
+            #       .format(n_trees, group))
 
             for ii in tqdm(xrange(n_trees)):
                 tree_size = tree_sizes[ii]
