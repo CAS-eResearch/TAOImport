@@ -3555,7 +3555,6 @@ class DARKSAGEConverter(tao.Converter):
         arr[row] = arr[row] + np.log10(SigmaHI[row,col])/np.log10(SigmaHI[row,col+1]/SigmaHI[row,col]) * (DiscRadii[row,col+1]-DiscRadii[row,col])
         return arr
 
-
     def RadiusTrans(self, tree):
         ratio = np.zeros((len(tree),30))
         DiscRadii = np.zeros((len(tree),30))
@@ -3630,45 +3629,70 @@ class DARKSAGEConverter(tao.Converter):
                  
     def StellarDiscMass(self,tree):
         return tree['StellarMass'] - tree['InstabilityBulgeMass'] - tree['MergerBulgeMass']
-    
-    def dZStar(self,tree):
-        grad = np.zeros(len(tree))
-        for g in xrange(len(tree)):
-            DiscMass = tree['StellarMass'][g] - tree['InstabilityBulgeMass'][g] - tree['MergerBulgeMass'][g]
+
+    def dZStar(self, tree):
+        ngals = len(tree)
+        grad = np.zeros(ngals)
+        num_r_bins = self.num_r_bins + 1
+        for g, gal in enumerate(tree):
+            DiscMass = gal['StellarMass'] - gal['InstabilityBulgeMass'] - gal['MergerBulgeMass']
             if DiscMass<=0: continue
+            inv_discmass = 1.0/DiscMass
+
             val = 0
-            rad = np.array([])
-            Z = np.array([])
-            for i in range(1,31):
-                val += tree['DiscStars_'+str(i)][g]/DiscMass
-                if val>0.5 and tree['DiscStars_'+str(i)][g]>0 and tree['DiscStarsMetals_'+str(i)][g]>0:
-                    rad = np.append(rad, (tree['DiscRadii_'+str(i)][g]+tree['DiscRadii_'+str(i-1)][g])/2*1e3)
-                    Z = np.append(Z, np.log10(tree['DiscStarsMetals_'+str(i)][g]/tree['DiscStars_'+str(i)][g]))
+            rad = np.zeros(num_r_bins, dtype=np.float32)
+            Z = np.zeros(num_r_bins, dtype=np.float32)
+            mask = np.zeros(num_r_bins, dtype=np.bool)
+            for i in range(1,num_r_bins):
+                val += gal['DiscStars_'+str(i)] * inv_discmass
+                if val > 0.5 and gal['DiscStars_'+str(i)] > 0.0 and gal['DiscStarsMetals_'+str(i)] > 0.0:
+                    rad[i] = (gal['DiscRadii_'+str(i)] + gal['DiscRadii_'+str(i-1)]) * 0.5 * 1e3 
+                    Z[i] = np.log10(gal['DiscStarsMetals_'+str(i)]/gal['DiscStars_'+str(i)])
+                    mask[i] = True
+                    
                 if val>0.9:
                     break
-            if len(rad)>2:
-                p = np.polyfit(rad, Z, 1)
-                grad[g] = p[0]
+
+            rad = rad[mask]
+            Z = Z[mask]
+            if len(rad) > 2:
+                A = np.vstack([rad, np.ones(len(rad))]).T
+                m, c = np.linalg.lstsq(A, Z)[0]
+                grad[g] = m
+                
+
         return grad
 
-    def dZGas(self,tree):
-        grad = np.zeros(len(tree))
-        for g in xrange(len(tree)):
-            DiscMass = tree['StellarMass'][g] - tree['InstabilityBulgeMass'][g] - tree['MergerBulgeMass'][g]
-            if tree['ColdGas'][g]<=0 or DiscMass<=0: continue
+    def dZGas(self, tree):
+        ngals = len(tree)
+        grad = np.zeros(ngals)
+        num_r_bins = self.num_r_bins + 1
+        for g, gal in enumerate(tree):
+            DiscMass = gal['StellarMass'] - gal['InstabilityBulgeMass'] - gal['MergerBulgeMass']
+            if gal['ColdGas'] <= 0 or DiscMass <= 0: continue
+            inv_discmass = 1.0/DiscMass
+
             val = 0
-            rad = np.array([])
-            Z = np.array([])
-            for i in range(1,31):
-                val += tree['DiscStars_'+str(i)][g]/DiscMass
-                if val>0.5 and tree['DiscGas_'+str(i)][g]>0 and tree['DiscGasMetals_'+str(i)][g]>0:
-                    rad = np.append(rad, (tree['DiscRadii_'+str(i)][g]+tree['DiscRadii_'+str(i-1)][g])/2*1e3)
-                    Z = np.append(Z, np.log10(tree['DiscGasMetals_'+str(i)][g]/tree['DiscGas_'+str(i)][g]))
+            rad = np.zeros(num_r_bins, dtype=np.float32)
+            Z = np.zeros(num_r_bins, dtype=np.float32)
+            mask = np.zeros(num_r_bins, dtype=np.bool)
+            for i in range(1, num_r_bins):
+                val += gal['DiscStars_'+str(i)] * inv_discmass
+                if val > 0.5 and gal['DiscGas_'+str(i)] > 0.0 and gal['DiscGasMetals_'+str(i)] > 0.0:
+                    rad[i] = (gal['DiscRadii_'+str(i)] + gal['DiscRadii_'+str(i-1)]) * 0.5 * 1e3
+                    Z[i] =  np.log10(gal['DiscGasMetals_'+str(i)]/gal['DiscGas_'+str(i)])
+                    mask[i] = True
+                    
                 if val>0.9:
                     break
+                    
+            rad = rad[mask]
+            Z = Z[mask]
             if len(rad)>2:
-                p = np.polyfit(rad, Z, 1)
-                grad[g] = p[0]
+                A = np.vstack([rad, np.ones(len(rad))]).T
+                m, c = np.linalg.lstsq(A, Z)[0]
+                grad[g] = m
+                
         return grad
     
     def MetalsStellarDiscMass(self, tree):
