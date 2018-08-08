@@ -22,10 +22,13 @@ setup(
         'Programming Language :: Python',
     ],
     license='BSD',
-
     packages=find_packages(),
     scripts=['tao/scripts/taoconvert'],
     include_package_data=True,
-    install_requires=['setuptools','tqdm', 'h5py'],
+    install_requires=['setuptools'],
+    # numpy 1.14 changes structured array assignment to be
+    # by position rather than by identical field names. This will
+    # mess up assignments in the `iterate_trees` with hdf5 files
+    run_requires=['tqdm', 'h5py','numpy < 1.14'],
     zip_safe=False,
 )

@@ -73,4 +73,6 @@ class LightCone(Module):
                             'velx', 'vely', 'velz'),
         WithinRange(0.0, library['box_size'], 'posx', 'posy', 'posz'),
         WithinCRange(0, library['n_snapshots'], 'snapnum')
+        # WithinCRange(min(library['snapshots']),
+        #              max(library['snapshots']), 'snapnum')
     ]

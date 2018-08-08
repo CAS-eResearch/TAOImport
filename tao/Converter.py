@@ -132,7 +132,12 @@ class Converter(object):
 
     def convert(self):
         sim = self.get_simulation_data()
-        redshifts = self.get_snapshot_redshifts()
+        snap_and_z = self.get_snapshot_redshifts()
+        try:
+            snapshots, redshifts = snap_and_z
+        except ValueError:
+            redshifts = snap_and_z
+            snapshots = np.arange(len(redshifts))
 
         if sim is None:
             print '\n'.join([
@@ -179,6 +184,7 @@ class Converter(object):
         # Cache some information for other parts of the system.
         library['box_size'] = sim['box_size']
         library['redshifts'] = redshifts
+        library['snapshots'] = snapshots
         library['n_snapshots'] = len(redshifts)
         library['metadata']  = self.metadata
         library['hubble'] = sim['hubble']

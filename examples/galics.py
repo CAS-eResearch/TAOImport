@@ -349,9 +349,9 @@ class GALICSConverter(tao.Converter):
                             help='name of the SAM. Set to '\
                                 'simulation name for a hydro sim')
         parser.add_argument('--firstsnap', default=2,
-                            help='The first snapshot to process')
-        parser.add_argument('--lastsnap', default=94,
-                            help='The last snapshot to process')
+                            help='The first snapshot to process (inclusive)')
+        parser.add_argument('--lastsnap', default=7,
+                            help='The last snapshot to process (inclusive)')
         parser.add_argument('--processing-galaxies', default=True,
                             help='A boolean flag to indicate that '\
                                 'galaxies are being processed. Set to False '\
@@ -414,6 +414,7 @@ class GALICSConverter(tao.Converter):
 
     
     # get_snapshot_redshifts to be modified to read snap z
+    # Called by tao converter
     def get_snapshot_redshifts(self):
         """Parse and convert the expansion factors.
 
@@ -631,18 +632,34 @@ class GALICSConverter(tao.Converter):
         uniq_tids_this_snap, uniq_index, uniq_counts = np.unique(treeids,
                                                                  return_index=True,
                                                                  return_counts=True)
+        ## Check that there isn't a bug in np.unique
+        assert uniq_counts.sum() == len(treeids), "Bug in numpy unique implementation"
 
         desc="Calculating start and stop indices"
         for tid, ui, uc in tqdm(zip(uniq_tids_this_snap, uniq_index, uniq_counts), desc=desc):
-            msg = "\nThe array indices for each tree should be "\
-                "stored contiguously at each snapshot. But "\
-                "TREEID = {0} at snapshot = {1}\nseems to be stored "\
-                "over non-sequential indices. Check if the input GALICS "\
-                "data are okay.\n"\
-                .format(tid, snapnum)
-                
-            yy = set(treeids[ui:ui+uc] - tid)
-            if len(yy) != 1 or 0 not in yy:
+            ## MS: for a list x, ``x.count(x[0]) == len(x)`` might be the
+            ## fastest check for *all* identical elements rather than
+            ## the ``set`` implementation used here
+
+            # The set implementation
+            # yy = set(treeids[ui:ui+uc] - tid)
+            # if len(yy) !=1 or 0 not in yy:
+
+            # the np.all implementation
+            # if not np.all(treeids[ui:ui+uc] == tid):
+
+            # the np.unique implementation
+            # if not np.unique(treeids[ui:ui+uc]) == [tid]:
+            
+            # the list.count implementation
+            yy = list(treeids[ui:ui+uc])
+            if yy.count(tid) != uc:
+                msg = "\nThe array indices for each tree should be "\
+                    "stored contiguously at each snapshot. But "\
+                    "TREEID = {0} at snapshot = {1}\nseems to be stored "\
+                    "over non-sequential indices. Check if the input GALICS "\
+                    "data are okay. yy = {2} yy.count(yy[0]) = {3} uc = {4}\n"\
+                    .format(tid, snapnum, yy, yy.count(yy[0]), uc)
                 raise tao.validators.ValidationError(msg)
 
             # For this tree at this snapshot, store the start
@@ -709,12 +726,13 @@ class GALICSConverter(tao.Converter):
         ngalaxies_per_tree_per_snapshot = np.zeros((ntrees, lastsnap + 1),
                                                    dtype=np.int)
         firstsnap = min(snapshots)
-        for treenum, tid in tqdm(enumerate(uniq_treeids)):
+        desc="Creating ngalaxies per tree array"
+        for treenum, tid in tqdm(enumerate(uniq_treeids), desc=desc, total=ntrees):
             final_snap_this_tree = final_snap[treenum]
             for snapnum in range(firstsnap, final_snap_this_tree + 1):
                 try:
                     start, stop = start_stop_indices[(tid, snapnum)] 
-                    ngalaxies_per_tree_per_snapshot[treenum, snapnum] = start_stop_indices
+                    ngalaxies_per_tree_per_snapshot[treenum, snapnum] = stop - start
                 except KeyError:
                     # There should be at least one dictionary hit (i.e., the tree must
                     # exist somewhere). However, since we are *always* starting from
@@ -733,7 +751,6 @@ class GALICSConverter(tao.Converter):
             ngalaxies_per_tree_per_snapshot
         
     
-    @profile
     def get_start_and_stop_indices_per_tree(self, ntrees, uniq_treeids,
                                             tree_id_field,
                                             snapshots, hf_files):
@@ -999,8 +1016,12 @@ class GALICSConverter(tao.Converter):
         # is required otherwise the first snapshot will not be included.
         # This is intentionally ordered from the last snapshot backwards
         # because that's how the vertical tree structure is usually processed
+        ## MS: 28th Feb 2018: Snapshots do not necessarily have to start at 0
         snapshots = np.arange(lastsnap, firstsnap - 1, step=-1, dtype=np.int)
-
+        # print("snaps = {0}".format(snaps))
+        # snapshots = np.array(snaps, dtype=np.int)
+        # print("snapshots arange = {0}".format(np.arange(lastsnap, firstsnap - 1, step=-1, dtype=np.int)))
+        
         # Now check if all the relevant files exist and open them with h5py
         # Result is a dictionary of h5py file handles
         hf_files = self.check_and_open_all_tree_files(self.args.trees_dir,
@@ -1040,9 +1061,9 @@ class GALICSConverter(tao.Converter):
         # snapshot, there will be at least `ntrees`
         ntrees = uniq_tree_ids.size
 
-        tree_id_file_order, final_snap_treeid, start_stop_indices, ngalaxies_per_tree_per_snapshot = self.find_unique_trees(tree_id_field,
-                                                                                                                            snapshots,
-                                                                                                                            hf_files)
+        tree_id_file_order, final_snap_treeids, start_stop_indices, ngalaxies_per_tree_per_snapshot = self.find_unique_trees(tree_id_field,
+                                                                                                                             snapshots,
+                                                                                                                             hf_files)
         
         # This is true number of trees we have to process
         ntrees = len(tree_id_file_order)
@@ -1113,8 +1134,11 @@ class GALICSConverter(tao.Converter):
                 
                 hf = hf_files[snapnum]
                 galaxies = hf['Galics_output']
-                start = start_indices[treenum, snapnum]
-                stop = stop_indices[treenum, snapnum]
+                try:
+                    start, stop = start_stop_indices[(tid, snapnum)]
+                except KeyError:
+                    # tree does not exist at this snapshot -> continue
+                    continue
                 ngalaxies_this_snap = ngals_per_snap[snapnum]
 
                 ## Gather the individual fields 
