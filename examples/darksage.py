@@ -9,7 +9,7 @@ import re, os
 import numpy as np
 import tao
 from collections import OrderedDict
-import progressbar
+from tqdm import trange
 
 class DARKSAGEConverter(tao.Converter):
     """Subclasses tao.Converter to perform SAGE output conversion."""
@@ -3215,6 +3215,7 @@ class DARKSAGEConverter(tao.Converter):
                  ])
         
         self.src_fields_dict = src_fields_dict
+        self.num_r_bins = 30
         super(DARKSAGEConverter, self).__init__(*args, **kwargs)
 
     @classmethod
@@ -3273,7 +3274,7 @@ class DARKSAGEConverter(tao.Converter):
         par = open(self.args.parameters, 'r').read()
         FirstBin = np.float32(re.search(r'FirstBin\s+(\d*\.?\d*)', par, re.I).group(1))
         ExponentBin = np.float32(re.search(r'ExponentBin\s+(\d*\.?\d*)', par, re.I).group(1))
-        DiscBinEdge = np.append(0, np.array([FirstBin*ExponentBin**i for i in range(30)]))
+        DiscBinEdge = np.append(0, np.array([FirstBin*ExponentBin**i for i in range(self.num_r_bins)]))
         j_bin = (DiscBinEdge[1:]+DiscBinEdge[:-1])/2.
         h = np.float32(re.search(r'Hubble_h\s+(\d*\.?\d*)', par, re.I).group(1))
         return j_bin, h
@@ -3777,7 +3778,26 @@ class DARKSAGEConverter(tao.Converter):
 
         j_bin, h = self.get_jbins()
     
-        computed_fields = {'TotSfr': self.totsfr, 'Vpeak': self.Vpeak, 'HImass': self.totHI, 'H2mass': self.totH2, 'PseudoBulgeMass': self.PseudoBulgeMass, 'jStarDisc': self.jStarDisc, 'jPseudoBulge': self.jPseudoBulge, 'jGas': self.jGas, 'jHI': self.jHI, 'jH2': self.jH2, 'RadiusHI': self.RadiusHI, 'RadiusTrans': self.RadiusTrans, 'r50': self.r50, 'r90': self.r90, 'rSFR': self.rSFR, 'StellarDiscMass': self.StellarDiscMass, 'dZStar': self.dZStar, 'dZGas': self.dZGas, 'MetalsStellarDiscMass': self.MetalsStellarDiscMass, 'MetalsPseudoBulge': self.MetalsPseudoBulge}
+        computed_fields = {'TotSfr': self.totsfr,
+                           'Vpeak': self.Vpeak,
+                           'HImass': self.totHI,
+                           'H2mass': self.totH2,
+                           'PseudoBulgeMass': self.PseudoBulgeMass,
+                           'jStarDisc': self.jStarDisc,
+                           'jPseudoBulge': self.jPseudoBulge,
+                           'jGas': self.jGas,
+                           'jHI': self.jHI,
+                           'jH2': self.jH2,
+                           'RadiusHI': self.RadiusHI,
+                           'RadiusTrans': self.RadiusTrans,
+                           'r50': self.r50,
+                           'r90': self.r90,
+                           'rSFR': self.rSFR,
+                           'StellarDiscMass': self.StellarDiscMass,
+                           'dZStar': self.dZStar,
+                           'dZGas': self.dZGas,
+                           'MetalsStellarDiscMass': self.MetalsStellarDiscMass,
+                           'MetalsPseudoBulge': self.MetalsPseudoBulge}
         computed_field_list = []
         for f in computed_fields:
             if f not in field_dict.keys():
@@ -3816,8 +3836,6 @@ class DARKSAGEConverter(tao.Converter):
                 totntrees += n_trees
 
         numtrees_processed = 0
-        bar = progressbar.ProgressBar(max_value=totntrees)
-
         for group in group_strings:
             files = []
             for redshift in redshift_strings:
@@ -3828,15 +3846,25 @@ class DARKSAGEConverter(tao.Converter):
             n_gals = [np.fromfile(f, np.uint32, 1)[0] for f in files]
             chunk_sizes = [np.fromfile(f, np.uint32, n_trees) for f in files]
             tree_sizes = sum(chunk_sizes)
-
-            for ii in xrange(n_trees):
+            print("Working on files written by cpu #{0}".format(group))
+            
+            for ii in trange(n_trees):
                 tree_size = tree_sizes[ii]
                 tree = np.empty(tree_size, dtype=src_type)
                 offs = 0
                 for jj in xrange(len(chunk_sizes)):
                     chunk_size = chunk_sizes[jj][ii]
                     data = np.fromfile(files[jj], from_file_dtype, chunk_size)
-                    tree[offs:offs + chunk_size] = data
+
+                    ## MS 13/07/2018.
+                    ## from numpy 1.13, the assignment of structured arrays
+                    ## changed. Previously, same named fields were copied
+                    ## across by default. Now, essentially the memory 
+                    ## is directly copied without regard for the actual
+                    ## column names. (I would argue this is a regression)
+                    for _v in data.dtype.names:
+                        tree[_v][offs:offs + chunk_size] = data[_v][:]
+
                     offs += chunk_size
 
                 for fieldname, conversion_function in computed_fields.items():
@@ -3850,65 +3878,48 @@ class DARKSAGEConverter(tao.Converter):
                 # Reset the negative values for TimeofLastMajorMerger and
                 # TimeofLastMinorMerger.
                 for f in ['TimeofLastMajorMerger']:
-                    timeofmerger = tree[f]
-                    ind = (np.where(timeofmerger < 0.0))[0]
-                    tree[f][ind] = -1.0
-                    
-                # Check any fields with negative values that shouldn't have them
-                check_fields = [
-                                    'Mvir',
-                                    'CentralMvir',
-                                    'Rvir',
-                                    'Vvir',
-                                    'Vmax',
-                                    'VelDisp',
-                                    'StellarMass',
-                                    'MergerBulgeMass',
-                                    'InstabilityBulgeMass',
-                                    'HotGas',
-                                    'EjectedMass',
-                                    'BlackHoleMass',
-                                    'ICS',
-                                    'MetalsStellarMass',
-                                    'MetalsMergerBulgeMass',
-                                    'MetalsInstabilityBulgeMass',
-                                    'MetalsHotGas',
-                                    'MetalsEjectedMass',
-                                    'MetalsICS',
-                                    'MetalsStellarDiscMass', 'MetalsPseudoBulge',
-                                    'Cooling',
-                                    'Heating',
-                                    'OutflowRate',
-                                    'infallMvir',
-                                    'infallVvir',
-                                    'infallVmax',
-                                    'TotSfr',
-                                    'Vpeak',
-                                    'HImass',
-                                    'H2mass',
-                                    'StellarDiscMass', 'PseudoBulgeMass',
-                                    'jStarDisc', 'jPseudoBulge', 'jGas', 'jHI', 'jH2',
-                                    'RadiusHI', 'RadiusTrans', 'r50', 'r90', 'rSFR',
-                                    'ColdGas', 'MetalsColdGas', 'DiskScaleRadius'
-                                ]
-                for field in check_fields:
-                    filt = (tree[field]<0) + (True-np.isfinite(tree[field]))
-                    tree[field][filt] = 0.0
+                    filt = tree[f] < 0.0
+                    tree[f][filt] = -1.0
 
+                # MS: This assert should always succeed
                 assert min(tree['TimeofLastMajorMerger']) >= -1.0, \
                     "TimeofLastMajorMerger should contain -1.0 to indicate "\
                     "no known last major merger"
-#                assert min(tree['TimeofLastMinorMerger']) >= -1.0, \
-#                    "TimeofLastMinorMerger should contain -1.0 to indicate "\
-#                    "no known last minor merger"
 
-
+                    
+                # Check any fields that should always be >= 0.0
+                check_fields = ['Mvir', 'CentralMvir', 'Rvir', 'Vvir',
+                                'Vmax', 'VelDisp', 'StellarMass',
+                                'MergerBulgeMass', 'InstabilityBulgeMass',
+                                'HotGas', 'EjectedMass', 'BlackHoleMass',
+                                'ICS', 'MetalsStellarMass',
+                                'MetalsMergerBulgeMass',
+                                'MetalsInstabilityBulgeMass',
+                                'MetalsHotGas', 'MetalsEjectedMass',
+                                'MetalsICS', 'MetalsStellarDiscMass',
+                                'MetalsPseudoBulge', 'Cooling',
+                                'Heating', 'OutflowRate', 'infallMvir',
+                                'infallVvir', 'infallVmax', 'TotSfr',
+                                'Vpeak', 'HImass', 'H2mass',
+                                'SfrDiskZ', 'SfrBulgeZ',
+                                'StellarDiscMass', 'PseudoBulgeMass',
+                                'jStarDisc', 'jPseudoBulge',
+                                'jGas', 'jHI', 'jH2', 'RadiusHI',
+                                'RadiusTrans', 'r50', 'r90', 'rSFR',
+                                'ColdGas', 'MetalsColdGas', 'DiskScaleRadius'
+                                ]
+                for field in check_fields:
+                    filt = tree[field] < 0.0
+                    tree[field][filt] = 0.0
+                    filt = ~np.isfinite(tree[field])
+                    tree[field][filt] = 0.0
+                    
 
 		# dT for first snapshot might be a problem
-		ind = (np.where(tree['dT'] < 0.0))[0]
-		if len(ind)>0:
-                 tree['dT'][ind] = 8.317
- 		assert min(tree['dT']) > 0, "Time between snapshots should be positive"
+		ind = tree['dT'] < 0.0
+                
+                ## MS: Why is this 8.317 -- Adam Stevens should know
+                tree['dT'][ind] = 8.317
 
                 # First validate ID's.
                 for f in ['ObjectType', 'GalaxyIndex', 'CentralGalaxyIndex']:
@@ -3928,9 +3939,12 @@ class DARKSAGEConverter(tao.Converter):
                     "Central Galaxy Index must equal Galaxy Index for centrals"
                               
                 numtrees_processed += 1
-                bar.update(numtrees_processed)
                 
                 yield tree
 
             for file in files:
                 file.close()
+
+            print("Done with {0}. Ntrees converted = {1} (out of {2})"
+                  .format(group, numtrees_processed, totntrees))
+                
