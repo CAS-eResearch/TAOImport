@@ -9,10 +9,8 @@ import os
 import numpy as np
 import tao
 from collections import OrderedDict
-from tqdm import tqdm
-from tqdm import trange
+from tqdm import tqdm, trange
 import h5py
-from IPython.core.debugger import Tracer
 
 class MERAXESConverter(tao.Converter):
     """Subclasses tao.Converter to perform MERAXES output conversion."""
@@ -1032,7 +1030,7 @@ class MERAXESConverter(tao.Converter):
 
         return np.zeros(len(tree), dtype=np.float32)
 
-    @profile
+        
     def iterate_trees(self):
         """Iterate over MERAXES trees."""
 
@@ -1171,11 +1169,23 @@ class MERAXESConverter(tao.Converter):
                             descs = np.empty(ngalaxies_this_snap, dtype=np.int32)
                             descs[:] = -1
 
-                        
-                        if len(gal_data) != ngalaxies_this_snap:
-                            Tracer()()
-
-                        tree[dest_sel] = gal_data
+                        ## MS 13/07/2018 applied to sage.py, applied
+                        ## to meraxes.py on 03/12/2018.
+                        ## from numpy 1.13, the assignment of structured arrays
+                        ## changed. Previously, same named fields were copied
+                        ## across by default. Now, essentially the memory
+                        ## is directly copied without regard for the actual
+                        ## column names. (MS: I would argue this is a regression)
+                        for _v in gal_data.dtype.names:
+                            try:
+                                tree[_v][dest_sel] = gal_data[_v][:]
+                            except ValueError:
+                                all_array_fields = [x[0] for x in array_fields]
+                                if _v in all_array_fields:
+                                    continue
+                                else:
+                                    raise
+                            
                         tree[dest_sel]['snapnum'] = snap
                         tree[dest_sel]['Descendant'] = descs
 
