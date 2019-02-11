@@ -10,6 +10,7 @@ import numpy as np
 import tao
 from collections import OrderedDict
 from tqdm import trange
+import time
 
 class DARKSAGEConverter(tao.Converter):
     """Subclasses tao.Converter to perform SAGE output conversion."""
@@ -3544,15 +3545,15 @@ class DARKSAGEConverter(tao.Converter):
         DiscRadii = np.zeros((len(tree),30))
         SigmaHI = np.zeros((len(tree),30))
         for i in range(1,31):
-            DiscRadii[:,i-1] = (tree['DiscRadii_'+str(i)]+tree['DiscRadii_'+str(i-1)])/2
-            SigmaHI[:,i-1] = tree['DiscHI_'+str(i)]/(np.pi*(tree['DiscRadii_'+str(i)]**2-tree['DiscRadii_'+str(i-1)]**2))*1e-2/h
+            DiscRadii[:,i-1] = (tree['DiscRadii_'+str(i)]+tree['DiscRadii_'+str(i-1)])*0.5
+            SigmaHI[:,i-1] = tree['DiscHI_'+str(i)]/(np.pi*(tree['DiscRadii_'+str(i)]**2-tree['DiscRadii_'+str(i-1)]**2))*1e-2*h
         (row, col) = np.where(SigmaHI>1.0)
         filt = np.append(np.diff(row)>0, True)
         row, col = row[filt], col[filt]
         arr = np.zeros(len(tree))
         arr[row] = DiscRadii[row,col]
         row, col = row[col<29], col[col<29]
-        arr[row] = arr[row] + np.log10(SigmaHI[row,col])/np.log10(SigmaHI[row,col+1]/SigmaHI[row,col]) * (DiscRadii[row,col+1]-DiscRadii[row,col])
+        arr[row] = arr[row] + (SigmaHI[row,col]-1.0)/(SigmaHI[row,col]-SigmaHI[row,col+1]) * (DiscRadii[row,col+1]-DiscRadii[row,col])
         return arr
 
     def RadiusTrans(self, tree):
@@ -3860,6 +3861,7 @@ class DARKSAGEConverter(tao.Converter):
                 totntrees += n_trees
 
         numtrees_processed = 0
+        cumul_time = 0.0
         for group in group_strings:
             files = []
             for redshift in redshift_strings:
@@ -3872,7 +3874,9 @@ class DARKSAGEConverter(tao.Converter):
             tree_sizes = sum(chunk_sizes)
             print("Working on files written by cpu #{0}".format(group))
             
-            for ii in trange(n_trees):
+            # for ii in trange(n_trees):
+            t_file_start = time.time()
+            for ii in xrange(n_trees):
                 tree_size = tree_sizes[ii]
                 tree = np.empty(tree_size, dtype=src_type)
                 offs = 0
@@ -3969,6 +3973,18 @@ class DARKSAGEConverter(tao.Converter):
             for file in files:
                 file.close()
 
-            print("Done with {0}. Ntrees converted = {1} (out of {2})"
-                  .format(group, numtrees_processed, totntrees))
-                
+            t_file_end = time.time()
+            time_this_file = t_file_end - t_file_start
+            cumul_time += time_this_file
+            print("Done with {0}. Time taken = {1} seconds. "
+                  "Ntrees converted = {2} (out of {3}). "
+                  "Cumulative time = {4} seconds."
+                  .format(group, time_this_file,
+                          numtrees_processed, totntrees,
+                          cumul_time))
+
+            # if int(group) >= 4:
+            #     print("processed group = {0}. Now exiting for profiling "
+            #           "purposes".format(group))
+            #     import sys
+            #     sys.exit(0)

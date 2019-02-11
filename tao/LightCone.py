@@ -70,6 +70,10 @@ class LightCone(Module):
         # Found it. MS - 1/11/2016 4 pm. Switched from 1e-3 to 1e-4
         # Found it. MS - 2/11/2016 6 am. Switched from 1e-4 to 1e-6. min=6
         # Found it. MS - 13/07/2018 8 pm. Switched from 1e-6 to 1e-4, min=10
+        # Found it. MS - 10/12/2018 8 pm. Switched from 1e-6 to 1e-3, min=10
+        # Found it. MS - 14/12/2018 12:30 pm. Switched from 1e-6 to 1e-2, min=10
+        # Previous change was dumb.  MS - 16/12/2018 8 am. Switched from 1e-2 to 1e-5, min=10
+        # MS - 18/12/2018 9 am. Switched from 1e-2 to 1e-6, min=10
         ## But that error with Millennium was strange!
         # Working on ntrees = 32054 in group = 471
         # Traceback (most recent call last):
@@ -93,8 +97,11 @@ class LightCone(Module):
         # Exception in thread Thread-472 (most likely raised during interpreter shutdown):
         # Traceback (most recent call last):
 
-        NonZeroDistribution(1e-4, 10, 'posx', 'posy', 'posz',
+        #tao.validators.ValidationError: At least 10 values are within min. width = 0.0001 for field "posy".. Found values of min,max=[41.308033,41.308083]. Size = 11
+        # tao.validators.ValidationError: At least 10 values are within min. width = 0.001 for field "posy".. Found values of min,max=[50.329983,50.330883]. Size = 10
+        NonZeroDistribution(1e-6, 10, 'posx', 'posy', 'posz',
                             'velx', 'vely', 'velz'),
+
         WithinRange(0.0, library['box_size'], 'posx', 'posy', 'posz'),
         WithinCRange(0, library['n_snapshots'], 'snapnum')
     ]
