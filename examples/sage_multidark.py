@@ -8,7 +8,7 @@ import re, os
 import numpy as np
 import tao
 from collections import OrderedDict
-from tqdm import tqdm
+import time
 
 class SAGEConverter_MultiDark(tao.Converter):
     """Subclasses tao.Converter to perform SAGE output conversion."""
@@ -866,6 +866,8 @@ class SAGEConverter_MultiDark(tao.Converter):
                 n_trees = np.fromfile(f, np.uint32, 1)[0]
                 totntrees += n_trees
 
+        numtrees_processed = 0
+        cumul_time = 0.0
         for group in group_strings:
             files = []
             for redshift in redshift_strings:
@@ -876,18 +878,28 @@ class SAGEConverter_MultiDark(tao.Converter):
             n_gals = [np.fromfile(f, np.uint32, 1)[0] for f in files]
             chunk_sizes = [np.fromfile(f, np.uint32, n_trees) for f in files]
             tree_sizes = sum(chunk_sizes)
-            print("Working on ntrees = {0} in group = {1}".format(n_trees,
-                                                                  group))
-
-            for ii in tqdm(xrange(n_trees)):
+            print("Working on files written by cpu #{0}".format(group))
+            
+            t_file_start = time.time()
+            for ii in xrange(n_trees):
                 tree_size = tree_sizes[ii]
                 tree = np.empty(tree_size, dtype=src_type)
                 offs = 0
                 for jj in xrange(len(chunk_sizes)):
                     chunk_size = chunk_sizes[jj][ii]
                     data = np.fromfile(files[jj], from_file_dtype, chunk_size)
-                    tree[offs:offs + chunk_size] = data
+
+                    ## MS 13/07/2018. Applied here on 18/03/2019 (MS)
+                    ## from numpy 1.13, the assignment of structured arrays
+                    ## changed. Previously, same named fields were copied
+                    ## across by default. Now, essentially the memory 
+                    ## is directly copied without regard for the actual
+                    ## column names. (I would argue this is a regression)
+                    for _v in data.dtype.names:
+                        tree[_v][offs:offs + chunk_size] = data[_v][:]
+                        
                     offs += chunk_size
+                    
 
                 for fieldname, conversion_function in computed_fields.items():
                     tree[fieldname] = conversion_function(tree)
@@ -929,8 +941,19 @@ class SAGEConverter_MultiDark(tao.Converter):
                               tree['CentralGalaxyIndex'][ind])), \
                     "Central Galaxy Index must equal Galaxy Index for centrals"
                               
+                numtrees_processed += 1
                 
                 yield tree
 
             for file in files:
                 file.close()
+                
+            t_file_end = time.time()
+            time_this_file = t_file_end - t_file_start
+            cumul_time += time_this_file
+            print("Done with {0}. Time taken = {1} seconds. "
+                  "Ntrees converted = {2} (out of {3}). "
+                  "Cumulative time = {4} seconds."
+                  .format(group, time_this_file,
+                          numtrees_processed, totntrees,
+                          cumul_time))

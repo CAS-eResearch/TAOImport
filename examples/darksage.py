@@ -9,7 +9,6 @@ import re, os
 import numpy as np
 import tao
 from collections import OrderedDict
-from tqdm import trange
 import time
 
 class DARKSAGEConverter(tao.Converter):
