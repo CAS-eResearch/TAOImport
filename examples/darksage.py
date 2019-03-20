@@ -3543,21 +3543,23 @@ class DARKSAGEConverter(tao.Converter):
     def RadiusHI(self, tree, h):
         DiscRadii = np.zeros((len(tree),30))
         SigmaHI = np.zeros((len(tree),30))
+        arr = np.zeros(len(tree))
         for i in range(1,31):
             DiscRadii[:,i-1] = (tree['DiscRadii_'+str(i)]+tree['DiscRadii_'+str(i-1)])*0.5
             SigmaHI[:,i-1] = tree['DiscHI_'+str(i)]/(np.pi*(tree['DiscRadii_'+str(i)]**2-tree['DiscRadii_'+str(i-1)]**2))*1e-2*h
         (row, col) = np.where(SigmaHI>1.0)
         filt = np.append(np.diff(row)>0, True)
-        row, col = row[filt], col[filt]
-        arr = np.zeros(len(tree))
-        arr[row] = DiscRadii[row,col]
-        row, col = row[col<29], col[col<29]
-        arr[row] = arr[row] + (SigmaHI[row,col]-1.0)/(SigmaHI[row,col]-SigmaHI[row,col+1]) * (DiscRadii[row,col+1]-DiscRadii[row,col])
+        if len(filt[filt])>0:
+            row, col = row[filt], col[filt]
+            arr[row] = DiscRadii[row,col]
+            row, col = row[col<29], col[col<29]
+            arr[row] = arr[row] + (SigmaHI[row,col]-1.0)/(SigmaHI[row,col]-SigmaHI[row,col+1]) * (DiscRadii[row,col+1]-DiscRadii[row,col])
         return arr
 
     def RadiusTrans(self, tree):
         ratio = np.zeros((len(tree),30))
         DiscRadii = np.zeros((len(tree),30))
+        arr = np.zeros(len(tree))
         for i in range(1,31):
             HI = tree['DiscHI_'+str(i)]
             H2 = tree['DiscH2_'+str(i)]
@@ -3565,66 +3567,69 @@ class DARKSAGEConverter(tao.Converter):
             ratio[w,i-1] = HI[w]/H2[w]
             DiscRadii[:,i-1] = (tree['DiscRadii_'+str(i)]+tree['DiscRadii_'+str(i-1)])/2
         (row, col) = np.where(ratio>1.0)
-        ind = np.searchsorted(row, np.unique(row))
-        row, col = row[ind], col[ind]
-        arr = np.zeros(len(tree))
-        arr[row] = DiscRadii[row,col]
-        row, col = row[col>0], col[col>0]
-        arr[row] = arr[row] - np.log10(ratio[row,col])/np.log10(ratio[row,col]/ratio[row,col-1]) * (DiscRadii[row,col]-DiscRadii[row,col-1]) # This could be problematic if the ratio is identical in adjacent annuli
+        if len(row)>0:
+            ind = np.searchsorted(row, np.unique(row))
+            row, col = row[ind], col[ind]
+            arr[row] = DiscRadii[row,col]
+            row, col = row[col>0], col[col>0]
+            arr[row] = arr[row] - np.log10(ratio[row,col])/np.log10(ratio[row,col]/ratio[row,col-1]) * (DiscRadii[row,col]-DiscRadii[row,col-1]) # This could be problematic if the ratio is identical in adjacent annuli
         return arr
     
     def r50(self, tree):
         DiscTot = tree['StellarMass'] - tree['InstabilityBulgeMass'] - tree['MergerBulgeMass']
         DiscArr = np.zeros((len(tree),30))
         DiscRadii = np.zeros((len(tree),30))
+        arr = np.zeros(len(tree))
         for i in range(1,31):
             DiscArr[:,i-1] = tree['DiscStars_'+str(i)]
             DiscRadii[:,i-1] = tree['DiscRadii_'+str(i)]
         ratio = np.cumsum(DiscArr, axis=1)
         ratio[DiscTot>0] = (ratio[DiscTot>0].T/DiscTot[DiscTot>0]).T # Not actually "ratio" until this line
         (row, col) = np.where(ratio>=0.5)
-        ind = np.searchsorted(row, np.unique(row))
-        row, col = row[ind], col[ind]
-        arr = np.zeros(len(tree))
-        arr[row] = DiscRadii[row,col]
-        row, col = row[col>0], col[col>0]
-        arr[row] = arr[row] - (ratio[row,col]-0.5)/(ratio[row,col]-ratio[row,col-1]) * (DiscRadii[row,col]-DiscRadii[row,col-1])
+        if len(row)>0:
+            ind = np.searchsorted(row, np.unique(row))
+            row, col = row[ind], col[ind]
+            arr[row] = DiscRadii[row,col]
+            row, col = row[col>0], col[col>0]
+            arr[row] = arr[row] - (ratio[row,col]-0.5)/(ratio[row,col]-ratio[row,col-1]) * (DiscRadii[row,col]-DiscRadii[row,col-1])
         return arr
                  
     def r90(self, tree):
         DiscTot = tree['StellarMass'] - tree['InstabilityBulgeMass'] - tree['MergerBulgeMass']
         DiscArr = np.zeros((len(tree),30))
         DiscRadii = np.zeros((len(tree),30))
+        arr = np.zeros(len(tree))
         for i in range(1,31):
             DiscArr[:,i-1] = tree['DiscStars_'+str(i)]
             DiscRadii[:,i-1] = tree['DiscRadii_'+str(i)]
         ratio = np.cumsum(DiscArr, axis=1)
         ratio[DiscTot>0] = (ratio[DiscTot>0].T/DiscTot[DiscTot>0]).T # Not actually "ratio" until this line
         (row, col) = np.where(ratio>=0.9)
-        ind = np.searchsorted(row, np.unique(row))
-        row, col = row[ind], col[ind]
-        arr = np.zeros(len(tree))
-        arr[row] = DiscRadii[row,col]
-        row, col = row[col>0], col[col>0]
-        arr[row] = arr[row] - (ratio[row,col]-0.9)/(ratio[row,col]-ratio[row,col-1]) * (DiscRadii[row,col]-DiscRadii[row,col-1])
+        if len(row)>0:
+            ind = np.searchsorted(row, np.unique(row))
+            row, col = row[ind], col[ind]
+            arr[row] = DiscRadii[row,col]
+            row, col = row[col>0], col[col>0]
+            arr[row] = arr[row] - (ratio[row,col]-0.9)/(ratio[row,col]-ratio[row,col-1]) * (DiscRadii[row,col]-DiscRadii[row,col-1])
         return arr
 
     def rSFR(self, tree):
         DiscTot = tree['SfrDisk']
         DiscArr = np.zeros((len(tree),30))
         DiscRadii = np.zeros((len(tree),30))
+        arr = np.zeros(len(tree))
         for i in range(1,31):
             DiscArr[:,i-1] = tree['DiscSFR_'+str(i)]
             DiscRadii[:,i-1] = tree['DiscRadii_'+str(i)]
         ratio = np.cumsum(DiscArr, axis=1)
         ratio[DiscTot>0] = (ratio[DiscTot>0].T/DiscTot[DiscTot>0]).T # Not actually "ratio" until this line
         (row, col) = np.where(ratio>=0.5)
-        ind = np.searchsorted(row, np.unique(row))
-        row, col = row[ind], col[ind]
-        arr = np.zeros(len(tree))
-        arr[row] = DiscRadii[row,col]
-        row, col = row[col>0], col[col>0]
-        arr[row] = arr[row] - (ratio[row,col]-0.5)/(ratio[row,col]-ratio[row,col-1]) * (DiscRadii[row,col]-DiscRadii[row,col-1])
+        if len(row)>0:
+            ind = np.searchsorted(row, np.unique(row))
+            row, col = row[ind], col[ind]
+            arr[row] = DiscRadii[row,col]
+            row, col = row[col>0], col[col>0]
+            arr[row] = arr[row] - (ratio[row,col]-0.5)/(ratio[row,col]-ratio[row,col-1]) * (DiscRadii[row,col]-DiscRadii[row,col-1])
         return arr
                  
     def StellarDiscMass(self,tree):
