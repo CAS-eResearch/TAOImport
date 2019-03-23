@@ -3548,8 +3548,8 @@ class DARKSAGEConverter(tao.Converter):
             DiscRadii[:,i-1] = (tree['DiscRadii_'+str(i)]+tree['DiscRadii_'+str(i-1)])*0.5
             SigmaHI[:,i-1] = tree['DiscHI_'+str(i)]/(np.pi*(tree['DiscRadii_'+str(i)]**2-tree['DiscRadii_'+str(i-1)]**2))*1e-2*h
         (row, col) = np.where(SigmaHI>1.0)
-        filt = np.append(np.diff(row)>0, True)
-        if len(filt[filt])>0:
+        if len(row)>0:
+            filt = np.append(np.diff(row)>0, True)
             row, col = row[filt], col[filt]
             arr[row] = DiscRadii[row,col]
             row, col = row[col<29], col[col<29]
