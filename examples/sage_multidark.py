@@ -518,8 +518,17 @@ class SAGEConverter_MultiDark(tao.Converter):
                 "that this halo belongs to",
                 'group': "Internal",
                 'order': -1,
+                }),
+               ('M_otherMvir', {
+                'type': np.float32,
+                'label': "Alternate mass definition",
+                'description': "Alternate halo mass definition according to "\
+                   "Bryan and Norman (1998)",
+                'group': "Internal",
+                'order': -1,
                 })
-                ])
+
+        ])
 
         self.src_fields_dict = src_fields_dict
         super(SAGEConverter_MultiDark, self).__init__(*args, **kwargs)
@@ -793,6 +802,7 @@ class SAGEConverter_MultiDark(tao.Converter):
                       'Vvir',
                       'Vmax',
                       'VelDisp',
+                      'M_otherMvir',
                       'ColdGas',
                       'StellarMass',
                       'BulgeMass',
@@ -841,7 +851,7 @@ class SAGEConverter_MultiDark(tao.Converter):
         from_file_dtype = np.dtype(ordered_dtype, align=True)
         print("from file type = {0}".format(from_file_dtype))
         print("sizeof(file_dtype) = {0}".format(from_file_dtype.itemsize))
-        assert from_file_dtype.itemsize == 240, "Size of datatypes do not match"
+        assert from_file_dtype.itemsize == 248, "Size of datatypes do not match"
         ordered_dtype.extend(computed_field_list)
         src_type = np.dtype(ordered_dtype)
         # print("src_type = {0}".format(src_type))
